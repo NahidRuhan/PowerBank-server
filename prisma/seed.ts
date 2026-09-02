@@ -35,7 +35,7 @@ async function main() {
   });
 
   // Customer User
-  await prisma.user.upsert({
+  const customer = await prisma.user.upsert({
     where: { email: 'customer@powerbank.com' },
     update: {},
     create: {
@@ -46,6 +46,58 @@ async function main() {
       meterNumber: 'DPDC-TEST-001',
       isVerified: true,
     },
+  });
+
+  console.log('Seeding Infrastructure...');
+  
+  const zone = await prisma.distributionZone.upsert({
+    where: { code: 'DHK-NORTH' },
+    update: {},
+    create: {
+      name: 'Dhaka North',
+      code: 'DHK-NORTH',
+      description: 'Northern part of Dhaka city'
+    }
+  });
+
+  const substation = await prisma.substation.upsert({
+    where: { code: 'MIR-10' },
+    update: {},
+    create: {
+      name: 'Mirpur 10 Substation',
+      code: 'MIR-10',
+      capacityMW: 200,
+      zoneId: zone.id
+    }
+  });
+
+  const feeder = await prisma.feeder.upsert({
+    where: { code: 'MIR-10-F3' },
+    update: {},
+    create: {
+      name: 'Mirpur 10 Feeder 3',
+      code: 'MIR-10-F3',
+      loadMW: 15,
+      substationId: substation.id
+    }
+  });
+
+  const area = await prisma.area.upsert({
+    where: { code: 'PALLABI-1' },
+    update: {},
+    create: {
+      name: 'Pallabi Phase 1',
+      code: 'PALLABI-1',
+      priority: 'MEDIUM',
+      customerCount: 1500,
+      feederId: feeder.id
+    }
+  });
+
+  // Assign customer to area
+  await prisma.user.update({
+    where: { id: customer.id },
+    data: { areaId: area.id }
   });
 
   console.log('Seeding completed!');
