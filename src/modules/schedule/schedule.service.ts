@@ -2,6 +2,7 @@ import { prisma } from '../../lib/prisma.js';
 import { ConflictError, NotFoundError, ValidationError } from '../../lib/errors.js';
 import { createAuditLog } from '../../lib/auditLog.js';
 import { parsePagination } from '../../lib/pagination.js';
+import { NotificationService } from '../../lib/notification.service.js';
 
 export class ScheduleService {
   static async create(data: any, userId: string) {
@@ -80,7 +81,12 @@ export class ScheduleService {
         changes: { new: schedule }
     });
 
-    // TODO: In Phase 6, trigger notification here
+    // Notify customers about upcoming schedule
+    NotificationService.notifyAffectedCustomers(
+      data.feederId,
+      'Upcoming Load Shedding Schedule',
+      `A load shedding schedule has been planned for your area from ${start.toLocaleString()} to ${end.toLocaleString()}. Reason: ${data.reason}`
+    );
 
     return { schedule, warning };
   }
@@ -187,7 +193,19 @@ export class ScheduleService {
           changes: { old: { status: schedule.status }, new: { status } }
       });
 
-      // TODO: Phase 6 notification trigger
+      if (status === 'ACTIVE') {
+          NotificationService.notifyAffectedCustomers(
+              schedule.feederId,
+              'Load Shedding Schedule Active',
+              `The scheduled load shedding for your area has now started and will last until ${schedule.endTime.toLocaleString()}.`
+          );
+      } else if (status === 'COMPLETED') {
+          NotificationService.notifyAffectedCustomers(
+              schedule.feederId,
+              'Load Shedding Schedule Completed',
+              `The scheduled load shedding for your area has been completed. Power is being restored.`
+          );
+      }
 
       return await this.getById(id);
   }

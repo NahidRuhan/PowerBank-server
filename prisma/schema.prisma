@@ -29,6 +29,7 @@ enum Priority {
 model User {
   id          String    @id @default(cuid())
   email       String    @unique
+  phoneNumber String?   @unique
   password    String?
   name        String
   avatar      String?
@@ -45,6 +46,7 @@ model User {
   auditLogs        AuditLog[]
   createdQuotas    SheddingQuota[]
   createdSchedules ScheduledOutage[]
+  outageIncidents  OutageIncident[]
 
   @@index([email])
   @@index([role])
@@ -113,6 +115,7 @@ model Feeder {
   substation Substation        @relation(fields: [substationId], references: [id])
   areas      Area[]
   schedules  ScheduledOutage[]
+  incidents  OutageIncident[]
 
   @@index([substationId])
   @@index([code])
@@ -147,13 +150,13 @@ enum ScheduleStatus {
 model SheddingQuota {
   id        String   @id @default(cuid())
   date      DateTime @db.Date
-  timeSlot  String   
-  targetMW  Float    
+  timeSlot  String
+  targetMW  Float
   createdBy String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  creator   User     @relation(fields: [createdBy], references: [id])
+  creator   User              @relation(fields: [createdBy], references: [id])
   schedules ScheduledOutage[]
 
   @@unique([date, timeSlot])
@@ -161,23 +164,49 @@ model SheddingQuota {
 }
 
 model ScheduledOutage {
-  id          String         @id @default(cuid())
-  feederId    String
-  quotaId     String?        
-  startTime   DateTime
-  endTime     DateTime
-  reason      String
-  status      ScheduleStatus @default(SCHEDULED)
-  createdBy   String
-  deletedAt   DateTime?
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id        String         @id @default(cuid())
+  feederId  String
+  quotaId   String?
+  startTime DateTime
+  endTime   DateTime
+  reason    String
+  status    ScheduleStatus @default(SCHEDULED)
+  createdBy String
+  deletedAt DateTime?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
 
-  feeder      Feeder         @relation(fields: [feederId], references: [id])
-  quota       SheddingQuota? @relation(fields: [quotaId], references: [id])
-  creator     User           @relation(fields: [createdBy], references: [id])
+  feeder  Feeder         @relation(fields: [feederId], references: [id])
+  quota   SheddingQuota? @relation(fields: [quotaId], references: [id])
+  creator User           @relation(fields: [createdBy], references: [id])
 
   @@index([feederId, startTime, endTime])
   @@index([status])
   @@index([quotaId])
+}
+
+enum IncidentStatus {
+  INVESTIGATING
+  IDENTIFIED
+  REPAIRING
+  RESOLVED
+}
+
+model OutageIncident {
+  id                   String         @id @default(cuid())
+  feederId             String
+  description          String
+  status               IncidentStatus @default(INVESTIGATING)
+  estimatedRestoration DateTime?
+  resolvedAt           DateTime?
+  createdBy            String
+  deletedAt            DateTime?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+
+  feeder  Feeder @relation(fields: [feederId], references: [id])
+  creator User   @relation(fields: [createdBy], references: [id])
+
+  @@index([feederId])
+  @@index([status])
 }
