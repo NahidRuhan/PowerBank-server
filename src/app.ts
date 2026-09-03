@@ -11,6 +11,8 @@ import zoneRoutes from './modules/zone/zone.routes.js';
 import substationRoutes from './modules/substation/substation.routes.js';
 import feederRoutes from './modules/feeder/feeder.routes.js';
 import areaRoutes from './modules/area/area.routes.js';
+import quotaRoutes from './modules/quota/quota.routes.js';
+import scheduleRoutes from './modules/schedule/schedule.routes.js';
 
 import './config/passport.js'; // Initialize passport
 
@@ -29,6 +31,8 @@ app.use('/api/v1/zones', zoneRoutes);
 app.use('/api/v1/substations', substationRoutes);
 app.use('/api/v1/feeders', feederRoutes);
 app.use('/api/v1/areas', areaRoutes);
+app.use('/api/v1/quotas', quotaRoutes);
+app.use('/api/v1/schedules', scheduleRoutes);
 
 // 404 handler
 app.use((req, res, next) => {
