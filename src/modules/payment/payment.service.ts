@@ -45,8 +45,8 @@ export class PaymentService {
         },
       ],
       mode: 'payment',
-      success_url: `http://localhost:5000/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `http://localhost:5000/payment-cancel`,
+      success_url: `${env.BASE_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${env.BASE_URL}/payment-cancel`,
       client_reference_id: payment.id,
     });
 
