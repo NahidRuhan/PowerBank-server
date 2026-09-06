@@ -1,0 +1,46 @@
+enum Role {
+  CUSTOMER
+  OPERATOR
+  ADMIN
+}
+
+enum FeederStatus {
+  ENERGIZED
+  LOAD_SHED
+  FAULT
+  MAINTENANCE
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ScheduleStatus {
+  SCHEDULED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum IncidentStatus {
+  INVESTIGATING
+  IDENTIFIED
+  REPAIRING
+  RESOLVED
+}
+
+enum BillStatus {
+  UNPAID
+  PAID
+  OVERDUE
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}

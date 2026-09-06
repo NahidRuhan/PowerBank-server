@@ -1,0 +1,45 @@
+model User {
+  id          String    @id @default(cuid())
+  email       String    @unique
+  phoneNumber String?   @unique
+  password    String?
+  name        String
+  avatar      String?
+  role        Role      @default(CUSTOMER)
+  meterNumber String?   @unique
+  areaId      String?
+  googleId    String?   @unique
+  isVerified  Boolean   @default(false)
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  area             Area?             @relation(fields: [areaId], references: [id])
+  auditLogs        AuditLog[]
+  createdQuotas    SheddingQuota[]
+  createdSchedules ScheduledOutage[]
+  outageIncidents  OutageIncident[]
+  bills            Bill[]
+  payments         Payment[]
+
+  @@index([email])
+  @@index([role])
+  @@index([meterNumber])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  entity    String
+  entityId  String
+  changes   Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([entity, entityId])
+  @@index([userId])
+  @@index([createdAt])
+}

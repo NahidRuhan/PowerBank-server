@@ -1,0 +1,37 @@
+model SheddingQuota {
+  id        String   @id @default(cuid())
+  date      DateTime @db.Date
+  timeSlot  String
+  targetMW  Float
+  createdBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  creator   User              @relation(fields: [createdBy], references: [id])
+  schedules ScheduledOutage[]
+
+  @@unique([date, timeSlot])
+  @@index([date])
+}
+
+model ScheduledOutage {
+  id        String         @id @default(cuid())
+  feederId  String
+  quotaId   String?
+  startTime DateTime
+  endTime   DateTime
+  reason    String
+  status    ScheduleStatus @default(SCHEDULED)
+  createdBy String
+  deletedAt DateTime?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  feeder  Feeder         @relation(fields: [feederId], references: [id])
+  quota   SheddingQuota? @relation(fields: [quotaId], references: [id])
+  creator User           @relation(fields: [createdBy], references: [id])
+
+  @@index([feederId, startTime, endTime])
+  @@index([status])
+  @@index([quotaId])
+}
