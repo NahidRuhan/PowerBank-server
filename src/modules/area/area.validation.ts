@@ -31,7 +31,7 @@ export const getAreasQuerySchema = z.object({
 });
 
 export const searchAreasQuerySchema = z.object({
-    query: z.object({
-        q: z.string().min(2)
-    })
-})
+  query: z.object({
+    q: z.string().min(2),
+  }),
+});

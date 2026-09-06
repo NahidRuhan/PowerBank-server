@@ -22,11 +22,11 @@ export class UserController {
   }
 
   static async changePassword(req: Request, res: Response, next: NextFunction) {
-      try {
-          await UserService.changePassword(req.user!.id, req.body);
-          return sendSuccess(res, null, 'Password changed successfully');
-      } catch (error) {
-          next(error);
-      }
+    try {
+      await UserService.changePassword(req.user!.id, req.body);
+      return sendSuccess(res, null, 'Password changed successfully');
+    } catch (error) {
+      next(error);
+    }
   }
 }

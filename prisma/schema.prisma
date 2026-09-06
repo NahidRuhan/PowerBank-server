@@ -47,6 +47,8 @@ model User {
   createdQuotas    SheddingQuota[]
   createdSchedules ScheduledOutage[]
   outageIncidents  OutageIncident[]
+  bills            Bill[]
+  payments         Payment[]
 
   @@index([email])
   @@index([role])
@@ -135,6 +137,7 @@ model Area {
 
   feeder Feeder @relation(fields: [feederId], references: [id])
   users  User[]
+  bills  Bill[]
 
   @@index([feederId])
   @@index([priority])
@@ -209,4 +212,61 @@ model OutageIncident {
 
   @@index([feederId])
   @@index([status])
+}
+
+enum BillStatus {
+  UNPAID
+  PAID
+  OVERDUE
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+model Bill {
+  id           String     @id @default(cuid())
+  userId       String
+  areaId       String
+  month        String     // "2026-09"
+  amount       Float      // base amount in BDT
+  surcharge    Float      @default(0)  // late fee
+  totalAmount  Float      // amount + surcharge
+  dueDate      DateTime
+  status       BillStatus @default(UNPAID)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  user         User       @relation(fields: [userId], references: [id])
+  area         Area       @relation(fields: [areaId], references: [id])
+  payments     Payment[]
+
+  @@unique([userId, month])
+  @@index([userId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+model Payment {
+  id               String        @id @default(cuid())
+  billId           String
+  userId           String
+  amount           Float
+  currency         String        @default("BDT")
+  status           PaymentStatus @default(PENDING)
+  stripeSessionId  String?       @unique
+  stripePaymentId  String?       @unique
+  metadata         Json?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  bill             Bill          @relation(fields: [billId], references: [id])
+  user             User          @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([billId])
+  @@index([stripeSessionId])
 }

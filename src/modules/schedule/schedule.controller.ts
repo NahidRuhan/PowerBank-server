@@ -6,7 +6,12 @@ export class ScheduleController {
   static async create(req: Request, res: Response, next: NextFunction) {
     try {
       const result = await ScheduleService.create(req.body, req.user!.id);
-      return sendSuccess(res, result.schedule, result.warning || 'Schedule created successfully', 201);
+      return sendSuccess(
+        res,
+        result.schedule,
+        result.warning || 'Schedule created successfully',
+        201,
+      );
     } catch (error) {
       next(error);
     }
@@ -32,7 +37,11 @@ export class ScheduleController {
 
   static async updateStatus(req: Request, res: Response, next: NextFunction) {
     try {
-      const schedule = await ScheduleService.updateStatus(req.params.id, req.body.status, req.user!.id);
+      const schedule = await ScheduleService.updateStatus(
+        req.params.id,
+        req.body.status,
+        req.user!.id,
+      );
       return sendSuccess(res, schedule, 'Schedule status updated');
     } catch (error) {
       next(error);
@@ -49,11 +58,11 @@ export class ScheduleController {
   }
 
   static async getFairness(req: Request, res: Response, next: NextFunction) {
-      try {
-          const stats = await ScheduleService.getFairnessStats();
-          return sendSuccess(res, stats);
-      } catch (error) {
-          next(error);
-      }
+    try {
+      const stats = await ScheduleService.getFairnessStats();
+      return sendSuccess(res, stats);
+    } catch (error) {
+      next(error);
+    }
   }
 }

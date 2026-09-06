@@ -27,14 +27,14 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
     }
 
     const token = authHeader.split(' ')[1];
-    
+
     try {
       const decoded = jwt.verify(token, env.JWT_SECRET) as AuthUser;
-      
+
       // Optionally verify user still exists and isn't deleted
       const user = await prisma.user.findUnique({ where: { id: decoded.id } });
       if (!user) {
-         throw new UnauthorizedError('User not found');
+        throw new UnauthorizedError('User not found');
       }
 
       req.user = decoded;

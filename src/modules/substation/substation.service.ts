@@ -14,10 +14,10 @@ export class SubstationService {
     }
 
     const zoneExists = await prisma.distributionZone.findUnique({
-      where: { id: data.zoneId }
+      where: { id: data.zoneId },
     });
     if (!zoneExists) {
-        throw new NotFoundError('Zone not found');
+      throw new NotFoundError('Zone not found');
     }
 
     const substation = await prisma.substation.create({
@@ -45,9 +45,9 @@ export class SubstationService {
         { code: { contains: query.search, mode: 'insensitive' } },
       ];
     }
-    
+
     if (query.zoneId) {
-        where.zoneId = query.zoneId;
+      where.zoneId = query.zoneId;
     }
 
     const [substations, total] = await Promise.all([
@@ -109,12 +109,12 @@ export class SubstationService {
     }
 
     if (data.zoneId && data.zoneId !== substation.zoneId) {
-        const zoneExists = await prisma.distributionZone.findUnique({
-            where: { id: data.zoneId }
-        });
-        if (!zoneExists) {
-            throw new NotFoundError('Zone not found');
-        }
+      const zoneExists = await prisma.distributionZone.findUnique({
+        where: { id: data.zoneId },
+      });
+      if (!zoneExists) {
+        throw new NotFoundError('Zone not found');
+      }
     }
 
     const updated = await prisma.substation.update({
@@ -141,29 +141,32 @@ export class SubstationService {
     if (!substation) throw new NotFoundError('Substation not found');
 
     await prisma.$transaction(async (tx) => {
-        const now = new Date();
-        
-        // Find all feeders
-        const feeders = await tx.feeder.findMany({ where: { substationId: id }, select: { id: true } });
-        const feederIds = feeders.map(f => f.id);
+      const now = new Date();
 
-        // Soft delete areas
-        await tx.area.updateMany({
-            where: { feederId: { in: feederIds } },
-            data: { deletedAt: now }
-        });
+      // Find all feeders
+      const feeders = await tx.feeder.findMany({
+        where: { substationId: id },
+        select: { id: true },
+      });
+      const feederIds = feeders.map((f) => f.id);
 
-        // Soft delete feeders
-        await tx.feeder.updateMany({
-            where: { substationId: id },
-            data: { deletedAt: now }
-        });
+      // Soft delete areas
+      await tx.area.updateMany({
+        where: { feederId: { in: feederIds } },
+        data: { deletedAt: now },
+      });
 
-        // Soft delete substation
-        await tx.substation.update({
-            where: { id },
-            data: { deletedAt: now }
-        });
+      // Soft delete feeders
+      await tx.feeder.updateMany({
+        where: { substationId: id },
+        data: { deletedAt: now },
+      });
+
+      // Soft delete substation
+      await tx.substation.update({
+        where: { id },
+        data: { deletedAt: now },
+      });
     });
 
     await createAuditLog({

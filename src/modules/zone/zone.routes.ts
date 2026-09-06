@@ -12,7 +12,12 @@ router.use(authenticate);
 router.post('/', authorize('ADMIN', 'OPERATOR'), validate(createZoneSchema), ZoneController.create);
 router.get('/', validate(getZonesQuerySchema), ZoneController.getAll);
 router.get('/:id', ZoneController.getById);
-router.patch('/:id', authorize('ADMIN', 'OPERATOR'), validate(updateZoneSchema), ZoneController.update);
+router.patch(
+  '/:id',
+  authorize('ADMIN', 'OPERATOR'),
+  validate(updateZoneSchema),
+  ZoneController.update,
+);
 router.delete('/:id', authorize('ADMIN'), ZoneController.delete);
 
 export default router;

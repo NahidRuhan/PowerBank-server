@@ -14,22 +14,24 @@ export class IncidentService {
 
     // 1. Create incident and update feeder status to FAULT
     const incident = await prisma.$transaction(async (tx) => {
-        const inc = await tx.outageIncident.create({
-            data: {
-                feederId: data.feederId,
-                description: data.description,
-                estimatedRestoration: data.estimatedRestoration ? new Date(data.estimatedRestoration) : null,
-                createdBy: userId
-            }
-        });
+      const inc = await tx.outageIncident.create({
+        data: {
+          feederId: data.feederId,
+          description: data.description,
+          estimatedRestoration: data.estimatedRestoration
+            ? new Date(data.estimatedRestoration)
+            : null,
+          createdBy: userId,
+        },
+      });
 
-        // Sync Feeder status
-        await tx.feeder.update({
-            where: { id: data.feederId },
-            data: { status: 'FAULT' }
-        });
+      // Sync Feeder status
+      await tx.feeder.update({
+        where: { id: data.feederId },
+        data: { status: 'FAULT' },
+      });
 
-        return inc;
+      return inc;
     });
 
     await createAuditLog({
@@ -41,9 +43,9 @@ export class IncidentService {
     });
 
     NotificationService.notifyAffectedCustomers(
-        data.feederId,
-        'Unexpected Power Outage',
-        `An unexpected power outage has been reported in your area. Description: ${data.description}. Our team is investigating.`
+      data.feederId,
+      'Unexpected Power Outage',
+      `An unexpected power outage has been reported in your area. Description: ${data.description}. Our team is investigating.`,
     );
 
     return incident;
@@ -63,9 +65,9 @@ export class IncidentService {
         take,
         orderBy: { createdAt: 'desc' },
         include: {
-            feeder: { select: { name: true, code: true } },
-            creator: { select: { name: true } }
-        }
+          feeder: { select: { name: true, code: true } },
+          creator: { select: { name: true } },
+        },
       }),
       prisma.outageIncident.count({ where }),
     ]);
@@ -85,9 +87,9 @@ export class IncidentService {
     const incident = await prisma.outageIncident.findUnique({
       where: { id, deletedAt: null },
       include: {
-          feeder: { select: { name: true, code: true } },
-          creator: { select: { name: true } }
-      }
+        feeder: { select: { name: true, code: true } },
+        creator: { select: { name: true } },
+      },
     });
 
     if (!incident) throw new NotFoundError('Incident not found');
@@ -95,72 +97,79 @@ export class IncidentService {
   }
 
   static async update(id: string, data: any, userId: string) {
-      const incident = await prisma.outageIncident.findUnique({ where: { id, deletedAt: null } });
-      if (!incident) throw new NotFoundError('Incident not found');
+    const incident = await prisma.outageIncident.findUnique({ where: { id, deletedAt: null } });
+    if (!incident) throw new NotFoundError('Incident not found');
 
-      if (incident.status === 'RESOLVED') {
-          throw new ValidationError('Cannot update a resolved incident');
-      }
+    if (incident.status === 'RESOLVED') {
+      throw new ValidationError('Cannot update a resolved incident');
+    }
 
-      const updateData: any = { ...data };
-      if (data.estimatedRestoration) {
-          updateData.estimatedRestoration = new Date(data.estimatedRestoration);
-      }
+    const updateData: any = { ...data };
+    if (data.estimatedRestoration) {
+      updateData.estimatedRestoration = new Date(data.estimatedRestoration);
+    }
 
-      let syncFeeder = false;
-      if (data.status === 'RESOLVED') {
-          updateData.resolvedAt = new Date();
-          syncFeeder = true;
-      }
+    let syncFeeder = false;
+    if (data.status === 'RESOLVED') {
+      updateData.resolvedAt = new Date();
+      syncFeeder = true;
+    }
 
-      const updated = await prisma.$transaction(async (tx) => {
-          const upd = await tx.outageIncident.update({
-              where: { id },
-              data: updateData
+    const updated = await prisma.$transaction(async (tx) => {
+      const upd = await tx.outageIncident.update({
+        where: { id },
+        data: updateData,
+      });
+
+      if (syncFeeder) {
+        // Only set back to ENERGIZED if there are no other active incidents or schedules for this feeder
+        const activeEvents = await tx.feeder.findUnique({
+          where: { id: incident.feederId },
+          include: {
+            incidents: { where: { status: { not: 'RESOLVED' }, deletedAt: null } },
+            schedules: { where: { status: 'ACTIVE', deletedAt: null } },
+          },
+        });
+
+        if (
+          activeEvents &&
+          activeEvents.incidents.length === 0 &&
+          activeEvents.schedules.length === 0
+        ) {
+          await tx.feeder.update({
+            where: { id: incident.feederId },
+            data: { status: 'ENERGIZED' },
           });
-
-          if (syncFeeder) {
-              // Only set back to ENERGIZED if there are no other active incidents or schedules for this feeder
-              const activeEvents = await tx.feeder.findUnique({
-                  where: { id: incident.feederId },
-                  include: {
-                      incidents: { where: { status: { not: 'RESOLVED' }, deletedAt: null } },
-                      schedules: { where: { status: 'ACTIVE', deletedAt: null } }
-                  }
-              });
-
-              if (activeEvents && activeEvents.incidents.length === 0 && activeEvents.schedules.length === 0) {
-                  await tx.feeder.update({
-                      where: { id: incident.feederId },
-                      data: { status: 'ENERGIZED' }
-                  });
-              }
-          }
-          return upd;
-      });
-
-      await createAuditLog({
-          userId,
-          action: 'UPDATE',
-          entity: 'OutageIncident',
-          entityId: id,
-          changes: { old: incident, new: updated }
-      });
-
-      if (data.status === 'RESOLVED') {
-          NotificationService.notifyAffectedCustomers(
-              incident.feederId,
-              'Power Restored',
-              'The unexpected power outage in your area has been resolved. Power should now be restored.'
-          );
-      } else if (data.estimatedRestoration && updated.estimatedRestoration?.getTime() !== incident.estimatedRestoration?.getTime()) {
-          NotificationService.notifyAffectedCustomers(
-              incident.feederId,
-              'Outage Update: Estimated Restoration Time',
-              `The estimated restoration time for the current outage in your area has been updated to: ${updated.estimatedRestoration?.toLocaleString()}`
-          );
+        }
       }
+      return upd;
+    });
 
-      return updated;
+    await createAuditLog({
+      userId,
+      action: 'UPDATE',
+      entity: 'OutageIncident',
+      entityId: id,
+      changes: { old: incident, new: updated },
+    });
+
+    if (data.status === 'RESOLVED') {
+      NotificationService.notifyAffectedCustomers(
+        incident.feederId,
+        'Power Restored',
+        'The unexpected power outage in your area has been resolved. Power should now be restored.',
+      );
+    } else if (
+      data.estimatedRestoration &&
+      updated.estimatedRestoration?.getTime() !== incident.estimatedRestoration?.getTime()
+    ) {
+      NotificationService.notifyAffectedCustomers(
+        incident.feederId,
+        'Outage Update: Estimated Restoration Time',
+        `The estimated restoration time for the current outage in your area has been updated to: ${updated.estimatedRestoration?.toLocaleString()}`,
+      );
+    }
+
+    return updated;
   }
 }

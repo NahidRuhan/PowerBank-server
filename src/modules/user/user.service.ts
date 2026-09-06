@@ -17,10 +17,10 @@ export class UserService {
 
   static async updateProfile(userId: string, data: any) {
     if (data.meterNumber) {
-        const existing = await prisma.user.findUnique({ where: { meterNumber: data.meterNumber } });
-        if (existing && existing.id !== userId) {
-             throw new ConflictError('Meter number is already registered to another user');
-        }
+      const existing = await prisma.user.findUnique({ where: { meterNumber: data.meterNumber } });
+      if (existing && existing.id !== userId) {
+        throw new ConflictError('Meter number is already registered to another user');
+      }
     }
 
     const oldUser = await prisma.user.findUnique({ where: { id: userId } });
@@ -31,15 +31,15 @@ export class UserService {
     });
 
     await createAuditLog({
-        userId,
-        action: 'UPDATE_PROFILE',
-        entity: 'User',
-        entityId: userId,
-        changes: {
-            name: { from: oldUser?.name, to: user.name },
-            meterNumber: { from: oldUser?.meterNumber, to: user.meterNumber }
-        }
-    })
+      userId,
+      action: 'UPDATE_PROFILE',
+      entity: 'User',
+      entityId: userId,
+      changes: {
+        name: { from: oldUser?.name, to: user.name },
+        meterNumber: { from: oldUser?.meterNumber, to: user.meterNumber },
+      },
+    });
 
     const { password, ...userWithoutPassword } = user;
     return userWithoutPassword;
@@ -48,7 +48,7 @@ export class UserService {
   static async changePassword(userId: string, data: any) {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user || !user.password) {
-        throw new UnauthorizedError('User not found or uses social login');
+      throw new UnauthorizedError('User not found or uses social login');
     }
 
     const isMatch = await bcrypt.compare(data.oldPassword, user.password);
@@ -63,10 +63,10 @@ export class UserService {
     });
 
     await createAuditLog({
-        userId,
-        action: 'CHANGE_PASSWORD',
-        entity: 'User',
-        entityId: userId
-    })
+      userId,
+      action: 'CHANGE_PASSWORD',
+      entity: 'User',
+      entityId: userId,
+    });
   }
 }

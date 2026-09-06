@@ -40,12 +40,12 @@ export class FeederController {
   }
 
   static async updateStatus(req: Request, res: Response, next: NextFunction) {
-      try {
-          const feeder = await FeederService.updateStatus(req.params.id, req.body.status, req.user!.id);
-          return sendSuccess(res, feeder, 'Feeder status updated');
-      } catch (error) {
-          next(error);
-      }
+    try {
+      const feeder = await FeederService.updateStatus(req.params.id, req.body.status, req.user!.id);
+      return sendSuccess(res, feeder, 'Feeder status updated');
+    } catch (error) {
+      next(error);
+    }
   }
 
   static async delete(req: Request, res: Response, next: NextFunction) {

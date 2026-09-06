@@ -14,10 +14,10 @@ export class AreaService {
     }
 
     const feederExists = await prisma.feeder.findUnique({
-      where: { id: data.feederId }
+      where: { id: data.feederId },
     });
     if (!feederExists) {
-        throw new NotFoundError('Feeder not found');
+      throw new NotFoundError('Feeder not found');
     }
 
     const area = await prisma.area.create({
@@ -45,13 +45,13 @@ export class AreaService {
         { code: { contains: query.search, mode: 'insensitive' } },
       ];
     }
-    
+
     if (query.feederId) {
-        where.feederId = query.feederId;
+      where.feederId = query.feederId;
     }
 
     if (query.priority) {
-        where.priority = query.priority;
+      where.priority = query.priority;
     }
 
     const [areas, total] = await Promise.all([
@@ -79,19 +79,19 @@ export class AreaService {
   }
 
   static async search(query: string) {
-      const areas = await prisma.area.findMany({
-          where: {
-              OR: [
-                  { name: { contains: query, mode: 'insensitive' } },
-                  { code: { contains: query, mode: 'insensitive' } }
-              ]
-          },
-          take: 10,
-          include: {
-              feeder: { select: { id: true, name: true, code: true, status: true } }
-          }
-      });
-      return areas;
+    const areas = await prisma.area.findMany({
+      where: {
+        OR: [
+          { name: { contains: query, mode: 'insensitive' } },
+          { code: { contains: query, mode: 'insensitive' } },
+        ],
+      },
+      take: 10,
+      include: {
+        feeder: { select: { id: true, name: true, code: true, status: true } },
+      },
+    });
+    return areas;
   }
 
   static async getById(id: string) {
@@ -123,12 +123,12 @@ export class AreaService {
     }
 
     if (data.feederId && data.feederId !== area.feederId) {
-        const feederExists = await prisma.feeder.findUnique({
-            where: { id: data.feederId }
-        });
-        if (!feederExists) {
-            throw new NotFoundError('Feeder not found');
-        }
+      const feederExists = await prisma.feeder.findUnique({
+        where: { id: data.feederId },
+      });
+      if (!feederExists) {
+        throw new NotFoundError('Feeder not found');
+      }
     }
 
     const updated = await prisma.area.update({
@@ -155,8 +155,8 @@ export class AreaService {
     if (!area) throw new NotFoundError('Area not found');
 
     await prisma.area.update({
-        where: { id },
-        data: { deletedAt: new Date() }
+      where: { id },
+      data: { deletedAt: new Date() },
     });
 
     await createAuditLog({

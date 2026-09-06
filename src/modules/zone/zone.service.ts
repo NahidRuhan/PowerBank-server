@@ -124,39 +124,45 @@ export class ZoneService {
     // Here we'll soft-delete the zone, which is fine since our relations aren't strict cascading in code yet.
     // Wait, the requirement says "cascade soft-delete (zone + substations + feeders + areas)"
     await prisma.$transaction(async (tx) => {
-        const now = new Date();
-        
-        // Find all substations
-        const substations = await tx.substation.findMany({ where: { zoneId: id }, select: { id: true } });
-        const subIds = substations.map(s => s.id);
+      const now = new Date();
 
-        // Find all feeders
-        const feeders = await tx.feeder.findMany({ where: { substationId: { in: subIds } }, select: { id: true } });
-        const feederIds = feeders.map(f => f.id);
+      // Find all substations
+      const substations = await tx.substation.findMany({
+        where: { zoneId: id },
+        select: { id: true },
+      });
+      const subIds = substations.map((s) => s.id);
 
-        // Soft delete areas
-        await tx.area.updateMany({
-            where: { feederId: { in: feederIds } },
-            data: { deletedAt: now }
-        });
+      // Find all feeders
+      const feeders = await tx.feeder.findMany({
+        where: { substationId: { in: subIds } },
+        select: { id: true },
+      });
+      const feederIds = feeders.map((f) => f.id);
 
-        // Soft delete feeders
-        await tx.feeder.updateMany({
-            where: { substationId: { in: subIds } },
-            data: { deletedAt: now }
-        });
+      // Soft delete areas
+      await tx.area.updateMany({
+        where: { feederId: { in: feederIds } },
+        data: { deletedAt: now },
+      });
 
-        // Soft delete substations
-        await tx.substation.updateMany({
-            where: { zoneId: id },
-            data: { deletedAt: now }
-        });
+      // Soft delete feeders
+      await tx.feeder.updateMany({
+        where: { substationId: { in: subIds } },
+        data: { deletedAt: now },
+      });
 
-        // Soft delete zone
-        await tx.distributionZone.update({
-            where: { id },
-            data: { deletedAt: now }
-        });
+      // Soft delete substations
+      await tx.substation.updateMany({
+        where: { zoneId: id },
+        data: { deletedAt: now },
+      });
+
+      // Soft delete zone
+      await tx.distributionZone.update({
+        where: { id },
+        data: { deletedAt: now },
+      });
     });
 
     await createAuditLog({

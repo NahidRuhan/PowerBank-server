@@ -19,7 +19,7 @@ export class NotificationService {
       const response = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${this.RESEND_API_KEY}`,
+          Authorization: `Bearer ${this.RESEND_API_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -44,20 +44,25 @@ export class NotificationService {
     }
 
     try {
-      const auth = Buffer.from(`${this.TWILIO_ACCOUNT_SID}:${this.TWILIO_AUTH_TOKEN}`).toString('base64');
+      const auth = Buffer.from(`${this.TWILIO_ACCOUNT_SID}:${this.TWILIO_AUTH_TOKEN}`).toString(
+        'base64',
+      );
       const params = new URLSearchParams();
       params.append('To', to);
       params.append('From', this.TWILIO_PHONE_NUMBER);
       params.append('Body', body);
 
-      const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${this.TWILIO_ACCOUNT_SID}/Messages.json`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Basic ${auth}`,
-          'Content-Type': 'application/x-www-form-urlencoded',
+      const response = await fetch(
+        `https://api.twilio.com/2010-04-01/Accounts/${this.TWILIO_ACCOUNT_SID}/Messages.json`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Basic ${auth}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: params.toString(),
         },
-        body: params.toString(),
-      });
+      );
 
       if (!response.ok) {
         console.error('Failed to send SMS via Twilio:', await response.text());
@@ -74,26 +79,28 @@ export class NotificationService {
         areas: {
           include: {
             users: {
-              where: { role: 'CUSTOMER' }
-            }
-          }
-        }
-      }
+              where: { role: 'CUSTOMER' },
+            },
+          },
+        },
+      },
     });
 
     if (!feeder) return;
 
-    const users = feeder.areas.flatMap(area => area.users);
-    
+    const users = feeder.areas.flatMap((area) => area.users);
+
     // Deduplicate users just in case they belong to multiple areas (though schema says Area 1:N User)
-    const uniqueUsers = Array.from(new Map(users.map(u => [u.id, u])).values());
+    const uniqueUsers = Array.from(new Map(users.map((u) => [u.id, u])).values());
 
     for (const user of uniqueUsers) {
       if (user.email) {
         // We're firing and forgetting to not block the main thread
-        this.sendEmail(user.email, subject, `<p>Hello ${user.name},</p><p>${message}</p>`).catch(console.error);
+        this.sendEmail(user.email, subject, `<p>Hello ${user.name},</p><p>${message}</p>`).catch(
+          console.error,
+        );
       }
-      
+
       const phone = (user as any).phoneNumber;
       if (phone) {
         this.sendSMS(phone, `PowerBank Alert: ${message}`).catch(console.error);

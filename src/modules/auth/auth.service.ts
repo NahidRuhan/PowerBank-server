@@ -17,12 +17,12 @@ export class AuthService {
     }
 
     if (data.meterNumber) {
-        const existingMeter = await prisma.user.findUnique({
-           where: { meterNumber: data.meterNumber }
-        })
-        if (existingMeter) {
-            throw new ConflictError('Meter number already registered');
-        }
+      const existingMeter = await prisma.user.findUnique({
+        where: { meterNumber: data.meterNumber },
+      });
+      if (existingMeter) {
+        throw new ConflictError('Meter number already registered');
+      }
     }
 
     const hashedPassword = await bcrypt.hash(data.password, 10);
@@ -38,10 +38,10 @@ export class AuthService {
     });
 
     await createAuditLog({
-        userId: user.id,
-        action: 'REGISTER',
-        entity: 'User',
-        entityId: user.id
+      userId: user.id,
+      action: 'REGISTER',
+      entity: 'User',
+      entityId: user.id,
     });
 
     const { password, ...userWithoutPassword } = user;
@@ -68,15 +68,15 @@ export class AuthService {
   static async refreshToken(refreshToken: string) {
     try {
       const decoded = jwt.verify(refreshToken, env.JWT_REFRESH_SECRET) as any;
-      
+
       const storedToken = await redis.get(`session:${decoded.id}`);
       if (storedToken !== refreshToken) {
-          throw new UnauthorizedError('Invalid refresh token');
+        throw new UnauthorizedError('Invalid refresh token');
       }
 
       const user = await prisma.user.findUnique({ where: { id: decoded.id } });
       if (!user) {
-         throw new UnauthorizedError('User not found');
+        throw new UnauthorizedError('User not found');
       }
 
       return this.generateTokens(user);
@@ -86,7 +86,7 @@ export class AuthService {
   }
 
   static async logout(userId: string) {
-      await redis.del(`session:${userId}`);
+    await redis.del(`session:${userId}`);
   }
 
   static async generateTokens(user: any) {

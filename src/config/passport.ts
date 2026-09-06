@@ -26,10 +26,10 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
           if (user) {
             // Link google ID if it exists but wasn't linked
             if (!user.googleId) {
-                user = await prisma.user.update({
-                    where: { id: user.id },
-                    data: { googleId: profile.id }
-                })
+              user = await prisma.user.update({
+                where: { id: user.id },
+                data: { googleId: profile.id },
+              });
             }
             return done(null, user);
           }
@@ -49,7 +49,7 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
         } catch (error) {
           done(error as Error);
         }
-      }
-    )
+      },
+    ),
   );
 }

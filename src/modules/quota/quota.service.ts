@@ -53,9 +53,9 @@ export class QuotaService {
         take,
         orderBy: [{ date: 'desc' }, { timeSlot: 'asc' }],
         include: {
-            creator: { select: { name: true } },
-            _count: { select: { schedules: true } }
-        }
+          creator: { select: { name: true } },
+          _count: { select: { schedules: true } },
+        },
       }),
       prisma.sheddingQuota.count({ where }),
     ]);
@@ -76,25 +76,25 @@ export class QuotaService {
       where: { id },
       include: {
         schedules: {
-            include: { feeder: { select: { name: true, loadMW: true } } }
-        }
-      }
+          include: { feeder: { select: { name: true, loadMW: true } } },
+        },
+      },
     });
 
     if (!quota) throw new NotFoundError('Quota not found');
 
     // Calculate total scheduled MW
     const totalScheduledMW = quota.schedules.reduce((sum, s) => {
-        if (s.status !== 'CANCELLED') {
-            return sum + s.feeder.loadMW;
-        }
-        return sum;
+      if (s.status !== 'CANCELLED') {
+        return sum + s.feeder.loadMW;
+      }
+      return sum;
     }, 0);
 
     return {
-        ...quota,
-        totalScheduledMW,
-        isOverTarget: totalScheduledMW > quota.targetMW * 1.1 // 10% tolerance
+      ...quota,
+      totalScheduledMW,
+      isOverTarget: totalScheduledMW > quota.targetMW * 1.1, // 10% tolerance
     };
   }
 }

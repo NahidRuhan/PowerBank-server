@@ -14,10 +14,10 @@ export class FeederService {
     }
 
     const substationExists = await prisma.substation.findUnique({
-      where: { id: data.substationId }
+      where: { id: data.substationId },
     });
     if (!substationExists) {
-        throw new NotFoundError('Substation not found');
+      throw new NotFoundError('Substation not found');
     }
 
     const feeder = await prisma.feeder.create({
@@ -45,13 +45,13 @@ export class FeederService {
         { code: { contains: query.search, mode: 'insensitive' } },
       ];
     }
-    
+
     if (query.substationId) {
-        where.substationId = query.substationId;
+      where.substationId = query.substationId;
     }
 
     if (query.status) {
-        where.status = query.status;
+      where.status = query.status;
     }
 
     const [feeders, total] = await Promise.all([
@@ -113,12 +113,12 @@ export class FeederService {
     }
 
     if (data.substationId && data.substationId !== feeder.substationId) {
-        const subExists = await prisma.substation.findUnique({
-            where: { id: data.substationId }
-        });
-        if (!subExists) {
-            throw new NotFoundError('Substation not found');
-        }
+      const subExists = await prisma.substation.findUnique({
+        where: { id: data.substationId },
+      });
+      if (!subExists) {
+        throw new NotFoundError('Substation not found');
+      }
     }
 
     const updated = await prisma.feeder.update({
@@ -142,16 +142,16 @@ export class FeederService {
     if (!feeder) throw new NotFoundError('Feeder not found');
 
     const updated = await prisma.feeder.update({
-        where: { id },
-        data: { status }
+      where: { id },
+      data: { status },
     });
 
     await createAuditLog({
-        userId,
-        action: 'UPDATE_STATUS',
-        entity: 'Feeder',
-        entityId: id,
-        changes: { old: { status: feeder.status }, new: { status } }
+      userId,
+      action: 'UPDATE_STATUS',
+      entity: 'Feeder',
+      entityId: id,
+      changes: { old: { status: feeder.status }, new: { status } },
     });
 
     return updated;
@@ -165,19 +165,19 @@ export class FeederService {
     if (!feeder) throw new NotFoundError('Feeder not found');
 
     await prisma.$transaction(async (tx) => {
-        const now = new Date();
-        
-        // Soft delete areas
-        await tx.area.updateMany({
-            where: { feederId: id },
-            data: { deletedAt: now }
-        });
+      const now = new Date();
 
-        // Soft delete feeder
-        await tx.feeder.update({
-            where: { id },
-            data: { deletedAt: now }
-        });
+      // Soft delete areas
+      await tx.area.updateMany({
+        where: { feederId: id },
+        data: { deletedAt: now },
+      });
+
+      // Soft delete feeder
+      await tx.feeder.update({
+        where: { id },
+        data: { deletedAt: now },
+      });
     });
 
     await createAuditLog({

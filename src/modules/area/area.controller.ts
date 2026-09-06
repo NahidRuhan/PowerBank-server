@@ -22,12 +22,12 @@ export class AreaController {
   }
 
   static async search(req: Request, res: Response, next: NextFunction) {
-      try {
-          const result = await AreaService.search(req.query.q as string);
-          return sendSuccess(res, result);
-      } catch (error) {
-          next(error);
-      }
+    try {
+      const result = await AreaService.search(req.query.q as string);
+      return sendSuccess(res, result);
+    } catch (error) {
+      next(error);
+    }
   }
 
   static async getById(req: Request, res: Response, next: NextFunction) {

@@ -31,13 +31,13 @@ export class AuthController {
   }
 
   static async logout(req: Request, res: Response, next: NextFunction) {
-      try {
-          if (req.user) {
-              await AuthService.logout(req.user.id);
-          }
-          return sendSuccess(res, null, 'Logout successful');
-      } catch (error) {
-          next(error);
+    try {
+      if (req.user) {
+        await AuthService.logout(req.user.id);
       }
+      return sendSuccess(res, null, 'Logout successful');
+    } catch (error) {
+      next(error);
+    }
   }
 }
