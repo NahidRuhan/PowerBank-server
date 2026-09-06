@@ -38,6 +38,36 @@ app.use(express.json());
 app.use(globalLimiter);
 app.use(passport.initialize());
 
+// Welcome Routes
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Welcome to the PowerBank API! Server is up and running.',
+    docs: 'Refer to Postman collection for API documentation'
+  });
+});
+
+app.get('/api/v1', (req, res) => {
+  res.json({
+    success: true,
+    message: 'PowerBank API v1 is active.',
+    endpoints: [
+      '/api/v1/auth',
+      '/api/v1/users',
+      '/api/v1/zones',
+      '/api/v1/substations',
+      '/api/v1/feeders',
+      '/api/v1/areas',
+      '/api/v1/quotas',
+      '/api/v1/schedules',
+      '/api/v1/incidents',
+      '/api/v1/bills',
+      '/api/v1/payments',
+      '/api/v1/admin'
+    ]
+  });
+});
+
 // Routes
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
