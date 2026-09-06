@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { UserService } from './user.service.js';
 import { sendSuccess } from '../../lib/response.js';
+import { uploadToCloudinary } from '../../middleware/upload.js';
 
 export class UserController {
   static async getProfile(req: Request, res: Response, next: NextFunction) {
@@ -14,7 +15,13 @@ export class UserController {
 
   static async updateProfile(req: Request, res: Response, next: NextFunction) {
     try {
-      const user = await UserService.updateProfile(req.user!.id, req.body);
+      const updateData = { ...req.body };
+      
+      if (req.file) {
+        updateData.avatar = await uploadToCloudinary(req.file.buffer, 'powerbank/avatars');
+      }
+
+      const user = await UserService.updateProfile(req.user!.id, updateData);
       return sendSuccess(res, user, 'Profile updated');
     } catch (error) {
       next(error);

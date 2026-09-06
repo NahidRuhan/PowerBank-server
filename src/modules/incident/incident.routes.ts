@@ -8,6 +8,7 @@ import {
 } from './incident.validation.js';
 import { authenticate } from '../../middleware/authenticate.js';
 import { authorize } from '../../middleware/authorize.js';
+import { upload } from '../../middleware/upload.js';
 
 const router = Router();
 
@@ -17,6 +18,7 @@ router.use(authenticate);
 router.post(
   '/',
   authorize('ADMIN', 'OPERATOR'),
+  upload.single('photo'),
   validate(createIncidentSchema),
   IncidentController.create,
 );

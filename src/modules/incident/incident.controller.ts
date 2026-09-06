@@ -1,11 +1,18 @@
 import { Request, Response, NextFunction } from 'express';
 import { IncidentService } from './incident.service.js';
 import { sendSuccess } from '../../lib/response.js';
+import { uploadToCloudinary } from '../../middleware/upload.js';
 
 export class IncidentController {
   static async create(req: Request, res: Response, next: NextFunction) {
     try {
-      const incident = await IncidentService.create(req.body, req.user!.id);
+      const data = { ...req.body };
+      
+      if (req.file) {
+        data.photoUrl = await uploadToCloudinary(req.file.buffer, 'powerbank/incidents');
+      }
+
+      const incident = await IncidentService.create(data, req.user!.id);
       return sendSuccess(res, incident, 'Incident reported successfully', 201);
     } catch (error) {
       next(error);

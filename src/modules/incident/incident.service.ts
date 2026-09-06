@@ -18,6 +18,7 @@ export class IncidentService {
         data: {
           feederId: data.feederId,
           description: data.description,
+          photoUrl: data.photoUrl,
           estimatedRestoration: data.estimatedRestoration
             ? new Date(data.estimatedRestoration)
             : null,

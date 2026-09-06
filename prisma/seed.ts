@@ -101,6 +101,8 @@ async function main() {
 
   console.log('Seeding Phase 3: Schedules and Quotas...');
 
+  const adminUser = await prisma.user.findUnique({ where: { email: 'admin@powerbank.com' } });
+  
   const quota = await prisma.sheddingQuota.upsert({
     where: { date_timeSlot: { date: new Date(), timeSlot: '18:00-19:00' } },
     update: {},
@@ -108,12 +110,13 @@ async function main() {
       date: new Date(),
       timeSlot: '18:00-19:00',
       targetMW: 100,
-      createdBy: customer.id, // Ideally operator/admin, but just for seed
+      createdBy: adminUser!.id,
     },
   });
 
   const now = new Date();
   const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+  const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
 
   await prisma.scheduledOutage.create({
     data: {
@@ -123,8 +126,31 @@ async function main() {
       endTime: oneHourLater,
       reason: 'Evening peak load shedding',
       status: 'SCHEDULED',
-      createdBy: customer.id, // Fake creator ID for seeding
+      createdBy: adminUser!.id,
     },
+  });
+
+  console.log('Seeding Phase 4 & 5: Incidents and Bills...');
+
+  await prisma.outageIncident.create({
+    data: {
+      feederId: feeder.id,
+      description: 'Transformer blown near block C',
+      status: 'INVESTIGATING',
+      createdBy: adminUser!.id,
+    },
+  });
+
+  await prisma.bill.create({
+    data: {
+      userId: customer.id,
+      areaId: area.id,
+      month: '2026-08',
+      amount: 1500,
+      totalAmount: 1500,
+      dueDate: new Date(now.getFullYear(), now.getMonth(), 15),
+      status: 'UNPAID',
+    }
   });
 
   console.log('Seeding completed!');

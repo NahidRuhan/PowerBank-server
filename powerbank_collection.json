@@ -213,8 +213,19 @@
               }
             ],
             "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Updated Name\"\n}"
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "name",
+                  "value": "Updated Name",
+                  "type": "text"
+                },
+                {
+                  "key": "avatar",
+                  "type": "file",
+                  "src": []
+                }
+              ]
             },
             "url": {
               "raw": "{{baseUrl}}/users/me",
@@ -911,8 +922,24 @@
               }
             ],
             "body": {
-              "mode": "raw",
-              "raw": "{\n  \"feederId\": \"REPLACE_WITH_FEEDER_ID\",\n  \"description\": \"Transformer exploded due to overload\"\n}"
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "feederId",
+                  "value": "REPLACE_WITH_FEEDER_ID",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "Transformer exploded due to overload",
+                  "type": "text"
+                },
+                {
+                  "key": "photo",
+                  "type": "file",
+                  "src": []
+                }
+              ]
             },
             "url": {
               "raw": "{{baseUrl}}/incidents",

@@ -199,6 +199,7 @@ model OutageIncident {
   id                   String         @id @default(cuid())
   feederId             String
   description          String
+  photoUrl             String?
   status               IncidentStatus @default(INVESTIGATING)
   estimatedRestoration DateTime?
   resolvedAt           DateTime?
