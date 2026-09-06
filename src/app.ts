@@ -16,6 +16,7 @@ import scheduleRoutes from './modules/schedule/schedule.routes.js';
 import incidentRoutes from './modules/incident/incident.routes.js';
 import billRoutes from './modules/bill/bill.routes.js';
 import paymentRoutes from './modules/payment/payment.routes.js';
+import adminRoutes from './modules/admin/admin.routes.js';
 
 import './config/passport.js'; // Initialize passport
 
@@ -49,6 +50,7 @@ app.use('/api/v1/schedules', scheduleRoutes);
 app.use('/api/v1/incidents', incidentRoutes);
 app.use('/api/v1/bills', billRoutes);
 app.use('/api/v1/payments', paymentRoutes);
+app.use('/api/v1/admin', adminRoutes);
 
 // Simple frontend redirect routes for Stripe Checkout
 app.get('/payment-success', (req, res) => {
