@@ -75,52 +75,122 @@ The backend server relies on a robust ecosystem of Node.js libraries, TypeScript
 
 ## 📚 API Documentation
 
-Below is a summary of the available endpoints. For full documentation, please import the included **Postman Collection** (`powerbank_collection.json`).
+Below is the complete list of available endpoints. For full documentation including headers and request bodies, please import the included **Postman Collection** (`powerbank_collection.json`).
 
-### 🔐 Authentication & Users
+### 1. Auth
 | Method | Endpoint | Description |
 |---|---|---|
-| `POST` | `/api/v1/auth/register` | Register new user |
-| `POST` | `/api/v1/auth/login` | Login user, get tokens |
-| `POST` | `/api/v1/auth/refresh-token` | Refresh access token |
-| `POST` | `/api/v1/auth/forgot-password`| Initiate password reset |
-| `POST` | `/api/v1/auth/reset-password` | Reset password using OTP |
-| `GET`  | `/api/v1/auth/google` | Google OAuth Login |
-| `GET`  | `/api/v1/users/me` | Get current user profile |
-| `PATCH`| `/api/v1/users/me` | Update user profile |
+| `POST` | `/api/v1/auth/register` | Register |
+| `POST` | `/api/v1/auth/login` | Login |
+| `POST` | `/api/v1/auth/refresh-token` | Refresh Token |
+| `POST` | `/api/v1/auth/logout` | Logout |
+| `POST` | `/api/v1/auth/forgot-password` | Forgot Password |
+| `POST` | `/api/v1/auth/reset-password` | Reset Password |
+| `GET` | `/api/v1/auth/google` | Google OAuth Login |
+| `GET` | `/api/v1/auth/google/callback` | Google OAuth Callback |
 
-### ⚡ Infrastructure Management
+### 2. Users
 | Method | Endpoint | Description |
 |---|---|---|
-| `POST` | `/api/v1/zones` | Create a distribution zone |
-| `GET`  | `/api/v1/zones` | Get all zones |
-| `POST` | `/api/v1/substations` | Create a substation |
-| `POST` | `/api/v1/feeders` | Create a feeder |
-| `POST` | `/api/v1/areas` | Create a residential/commercial area |
+| `GET` | `/api/v1/users/me` | Get Profile |
+| `PATCH` | `/api/v1/users/me` | Update Profile |
+| `PATCH` | `/api/v1/users/me/password` | Change Password |
 
-### 📅 Load Shedding & Schedules
+### 3. Infrastructure (Zones)
 | Method | Endpoint | Description |
 |---|---|---|
-| `POST` | `/api/v1/quotas` | Admin sets a shedding quota |
-| `POST` | `/api/v1/schedules` | Operator creates a planned outage |
-| `GET`  | `/api/v1/schedules` | Get all scheduled outages |
-| `PATCH`| `/api/v1/schedules/:id/status`| Update schedule status (`ACTIVE`, `COMPLETED`) |
-| `GET`  | `/api/v1/schedules/fairness` | Get grid fairness analytics |
+| `POST` | `/api/v1/zones` | Create Zone |
+| `GET` | `/api/v1/zones` | Get All Zones |
+| `GET` | `/api/v1/zones/:id` | Get Zone By ID |
+| `PATCH` | `/api/v1/zones/:id` | Update Zone |
+| `DELETE` | `/api/v1/zones/:id` | Delete Zone |
 
-### 🚨 Incident Management
+### 4. Infrastructure (Substations)
 | Method | Endpoint | Description |
 |---|---|---|
-| `POST` | `/api/v1/incidents/report` | Customer reports a blackout |
-| `GET`  | `/api/v1/incidents` | Get all incidents |
-| `PATCH`| `/api/v1/incidents/:id/status`| Operator updates repair status |
+| `POST` | `/api/v1/substations` | Create Substation |
+| `GET` | `/api/v1/substations` | Get All Substations |
+| `PATCH` | `/api/v1/substations/:id` | Update Substation |
+| `DELETE` | `/api/v1/substations/:id` | Delete Substation |
+| `GET` | `/api/v1/substations/:id` | Get Substation By ID |
 
-### 💳 Billing & Payments (Stripe)
+### 5. Infrastructure (Feeders)
 | Method | Endpoint | Description |
 |---|---|---|
-| `POST` | `/api/v1/bills/generate` | Admin generates monthly bills |
-| `GET`  | `/api/v1/bills/my-bills` | Customer views their bills |
-| `POST` | `/api/v1/payments/initiate` | Create a Stripe checkout session |
-| `POST` | `/api/v1/payments/webhook` | Stripe webhook for payment confirmation |
+| `POST` | `/api/v1/feeders` | Create Feeder |
+| `GET` | `/api/v1/feeders` | Get All Feeders |
+| `PATCH` | `/api/v1/feeders/:id/status` | Update Feeder Status |
+| `DELETE` | `/api/v1/feeders/:id` | Delete Feeder |
+| `GET` | `/api/v1/feeders/:id` | Get Feeder By ID |
+| `PATCH` | `/api/v1/feeders/:id` | Update Feeder Details |
+
+### 6. Infrastructure (Areas)
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/v1/areas` | Create Area |
+| `GET` | `/api/v1/areas` | Get All Areas |
+| `GET` | `/api/v1/areas/search?q=Mirpur` | Search Areas |
+| `PATCH` | `/api/v1/areas/:id` | Update Area |
+| `DELETE` | `/api/v1/areas/:id` | Delete Area |
+| `GET` | `/api/v1/areas/:id` | Get Area By ID |
+
+### 7. Quotas
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/v1/quotas` | Create Quota |
+| `GET` | `/api/v1/quotas` | Get All Quotas |
+| `GET` | `/api/v1/quotas/:id` | Get Quota By ID |
+
+### 8. Schedules
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/v1/schedules` | Create Schedule |
+| `GET` | `/api/v1/schedules` | Get All Schedules |
+| `PATCH` | `/api/v1/schedules/:id/status` | Update Schedule Status |
+| `GET` | `/api/v1/schedules/fairness` | Get Fairness Stats |
+| `GET` | `/api/v1/schedules/:id` | Get Schedule By ID |
+| `DELETE` | `/api/v1/schedules/:id` | Delete Schedule |
+
+### 9. Incidents
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/v1/incidents` | Create Incident |
+| `GET` | `/api/v1/incidents` | Get All Incidents |
+| `PATCH` | `/api/v1/incidents/:id` | Update Incident |
+| `PATCH` | `/api/v1/incidents/:id` | Resolve Incident |
+| `GET` | `/api/v1/incidents/:id` | Get Incident By ID |
+
+### 10. Bills
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/v1/bills/generate` | Generate Bills |
+| `GET` | `/api/v1/bills` | Get All Bills (Admin) |
+| `GET` | `/api/v1/bills/my-bills` | Get My Bills (Customer) |
+| `POST` | `/api/v1/bills/process-overdue` | Process Overdue Bills |
+| `GET` | `/api/v1/bills/:id` | Get Bill By ID |
+
+### 11. Payments
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/v1/payments/initiate` | Initiate Payment |
+| `GET` | `/api/v1/payments/my-payments` | Get My Payments |
+| `POST` | `/api/v1/payments/:id/refund` | Refund Payment (Admin) |
+
+### 12. Admin
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/v1/admin/dashboard` | Get Dashboard Stats |
+| `GET` | `/api/v1/admin/users` | Get All Users |
+| `PATCH` | `/api/v1/admin/users/:id/role` | Update User Role |
+| `DELETE` | `/api/v1/admin/users/:id` | Delete User |
+| `GET` | `/api/v1/admin/audit-logs` | Get Audit Logs |
+
+### 13. Meters
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/v1/meters` | Create Meter |
+| `GET` | `/api/v1/meters` | Get All Meters |
+| `DELETE` | `/api/v1/meters/:id` | Delete Meter |
 
 ## 🚀 Installation & Setup
 
@@ -136,19 +206,36 @@ Below is a summary of the available endpoints. For full documentation, please im
    ```
 
 3. **Set up environment variables**
-   Create a `.env` file in the root directory and add your database, Redis, and secret keys:
+   Create a `.env` file in the root directory and add all the required API keys (matching `.env.example`):
    ```env
-   NODE_ENV=development
-   PORT=5000
-   DATABASE_URL="postgresql://user:password@localhost:5432/powerbank"
-   REDIS_URL="redis://localhost:6379"
-   JWT_SECRET="your_access_secret"
-   JWT_REFRESH_SECRET="your_refresh_secret"
-   STRIPE_SECRET_KEY="sk_test_..."
-   STRIPE_WEBHOOK_SECRET="whsec_..."
-   CLOUDINARY_CLOUD_NAME="..."
-   RESEND_API_KEY="..."
-   TWILIO_ACCOUNT_SID="..."
+   NODE_ENV="development"
+   PORT="5000"
+   BASE_URL="http://localhost:5000"
+   DATABASE_URL=""
+   REDIS_URL=""
+   JWT_SECRET=""
+   JWT_REFRESH_SECRET=""
+   
+   GOOGLE_CLIENT_ID=""
+   GOOGLE_CLIENT_SECRET=""
+   GOOGLE_CALLBACK_URL=""
+   
+   # Notification Service
+   RESEND_API_KEY=""
+   RESEND_FROM_EMAIL=""
+   
+   TWILIO_ACCOUNT_SID=""
+   TWILIO_AUTH_TOKEN=""
+   TWILIO_PHONE_NUMBER=""
+   
+   # Payment Service (Stripe)
+   STRIPE_SECRET_KEY=""
+   STRIPE_WEBHOOK_SECRET=""
+   
+   # File Upload (Cloudinary)
+   CLOUDINARY_CLOUD_NAME=""
+   CLOUDINARY_API_KEY=""
+   CLOUDINARY_API_SECRET=""
    ```
 
 4. **Run Prisma Migrations & Seed Data**
