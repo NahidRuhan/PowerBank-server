@@ -5,6 +5,7 @@ import { redis } from '../../lib/redis.js';
 import { env } from '../../lib/env.js';
 import { ConflictError, UnauthorizedError, NotFoundError } from '../../lib/errors.js';
 import { createAuditLog } from '../../lib/auditLog.js';
+import { NotificationService } from '../../lib/notification.service.js';
 
 export class AuthService {
   static async register(data: any) {
@@ -140,8 +141,13 @@ export class AuthService {
     // Store in redis with 5-minute expiry
     await redis.set(`otp:${email}`, otp, 'EX', 300);
 
-    // In a real application, send this OTP via email or SMS
-    // For this assignment/API, we can just log it or return it in development
+    // Send OTP via email using Resend integration
+    await NotificationService.sendEmail(
+      email,
+      'PowerBank - Password Reset OTP',
+      `<p>Your OTP for password reset is: <strong>${otp}</strong></p><p>This OTP will expire in 5 minutes.</p>`
+    ).catch(console.error);
+
     console.log(`[DEV ONLY] OTP for ${email} is ${otp}`);
 
     await createAuditLog({
@@ -150,6 +156,10 @@ export class AuthService {
       entity: 'User',
       entityId: user.id,
     });
+
+    if (env.NODE_ENV === 'development') {
+      return { message: 'If the email exists, an OTP has been sent', otp };
+    }
 
     return { message: 'If the email exists, an OTP has been sent' };
   }
