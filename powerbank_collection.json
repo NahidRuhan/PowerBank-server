@@ -211,6 +211,41 @@
               ]
             }
           }
+        },
+        {
+          "name": "Google OAuth Login",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/google",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "google"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Google OAuth Callback",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/google/callback",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "google",
+                "callback"
+              ]
+            }
+          }
         }
       ]
     },
@@ -611,6 +646,33 @@
               ]
             }
           }
+        },
+        {
+          "name": "Get Substation By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/substations/REPLACE_WITH_SUBSTATION_ID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "substations",
+                "REPLACE_WITH_SUBSTATION_ID"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
         }
       ]
     },
@@ -738,6 +800,69 @@
                 "feeders",
                 "REPLACE_WITH_FEEDER_ID"
               ]
+            }
+          }
+        },
+        {
+          "name": "Get Feeder By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/feeders/REPLACE_WITH_FEEDER_ID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "feeders",
+                "REPLACE_WITH_FEEDER_ID"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Feeder Details",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/feeders/REPLACE_WITH_FEEDER_ID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "feeders",
+                "REPLACE_WITH_FEEDER_ID"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Feeder Name\"\n}"
             }
           }
         }
@@ -901,6 +1026,33 @@
               ]
             }
           }
+        },
+        {
+          "name": "Get Area By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/areas/REPLACE_WITH_AREA_ID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "areas",
+                "REPLACE_WITH_AREA_ID"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
         }
       ]
     },
@@ -964,6 +1116,33 @@
               ],
               "path": [
                 "quotas"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Quota By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/quotas/REPLACE_WITH_QUOTA_ID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "quotas",
+                "REPLACE_WITH_QUOTA_ID"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
               ]
             }
           }
@@ -1094,6 +1273,60 @@
               "path": [
                 "schedules",
                 "fairness"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Schedule By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/schedules/REPLACE_WITH_SCHEDULE_ID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "schedules",
+                "REPLACE_WITH_SCHEDULE_ID"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Schedule",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/schedules/REPLACE_WITH_SCHEDULE_ID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "schedules",
+                "REPLACE_WITH_SCHEDULE_ID"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
               ]
             }
           }
@@ -1251,6 +1484,33 @@
               ]
             }
           }
+        },
+        {
+          "name": "Get Incident By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/incidents/REPLACE_WITH_INCIDENT_ID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "incidents",
+                "REPLACE_WITH_INCIDENT_ID"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
         }
       ]
     },
@@ -1369,6 +1629,33 @@
               "path": [
                 "bills",
                 "process-overdue"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Bill By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bills/REPLACE_WITH_BILL_ID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bills",
+                "REPLACE_WITH_BILL_ID"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
               ]
             }
           }
