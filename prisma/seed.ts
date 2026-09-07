@@ -6,7 +6,7 @@ async function main() {
   console.log('🧹 Wiping existing database...');
   // Hard delete all tables to avoid soft-delete unique constraint issues
   await prisma.$executeRawUnsafe(
-    `TRUNCATE TABLE "Meter", "Payment", "Bill", "OutageIncident", "ScheduledOutage", "SheddingQuota", "Area", "Feeder", "Substation", "DistributionZone", "AuditLog", "User" CASCADE;`,
+    `TRUNCATE TABLE "Meter", "Payment", "Bill", "OutageReport", "OutageIncident", "ScheduledOutage", "SheddingQuota", "Area", "Feeder", "Substation", "DistributionZone", "AuditLog", "User" CASCADE;`,
   );
 
   console.log('🌱 Seeding fresh data...');
@@ -262,35 +262,74 @@ async function main() {
     data: { status: 'LOAD_SHED' },
   });
 
-  // --- 5. Incidents ---
-  console.log('Creating incidents...');
+  // --- 5. Incidents & Reports ---
+  console.log('Creating incidents and outage reports...');
 
   // Investigating incident
-  await prisma.outageIncident.create({
+  const incident1 = await prisma.outageIncident.create({
     data: {
       feederId: feederMirpur1.id,
       description: 'Underground cable fault reported near Circle',
       status: 'REPORTED',
-      createdBy: operator1.id,
+      priority: 'MEDIUM',
+      createdBy: customer1.id,
     },
   });
 
+  await prisma.outageReport.create({
+    data: {
+      incidentId: incident1.id,
+      userId: customer1.id,
+      description: 'Power has been out for 20 mins!',
+    }
+  });
+
   // Repairing incident
-  await prisma.outageIncident.create({
+  const incident2 = await prisma.outageIncident.create({
     data: {
       feederId: feederMotijheel1.id,
       description: 'Transformer blown, replacement in transit',
       status: 'IN_PROGRESS',
+      priority: 'CRITICAL',
       estimatedRestoration: new Date(now.getTime() + 4 * 60 * 60 * 1000), // +4 hours
-      createdBy: operator1.id,
+      createdBy: customer4.id,
       assignedToId: operator2.id,
     },
   });
 
+  await prisma.outageReport.create({
+    data: {
+      incidentId: incident2.id,
+      userId: customer4.id,
+      description: 'Massive spark and then everything went dark.',
+    }
+  });
+
   // Update feeder status to FAULT
   await prisma.feeder.updateMany({
-    where: { id: { in: [feederMirpur2.id, feederMotijheel1.id] } },
+    where: { id: { in: [feederMirpur1.id, feederMotijheel1.id] } },
     data: { status: 'FAULT' },
+  });
+
+  // --- 5.5 Audit Logs ---
+  console.log('Creating audit logs...');
+  await prisma.auditLog.create({
+    data: {
+      userId: admin.id,
+      action: 'SYSTEM_INIT',
+      entity: 'System',
+      entityId: 'global',
+      changes: { note: 'Database initialized with seed data' },
+    }
+  });
+  await prisma.auditLog.create({
+    data: {
+      userId: operator1.id,
+      action: 'CREATE',
+      entity: 'SheddingQuota',
+      entityId: quota.id,
+      changes: { new: quota },
+    }
   });
 
   // --- 6. Bills & Payments ---
