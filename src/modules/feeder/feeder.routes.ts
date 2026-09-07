@@ -6,6 +6,7 @@ import {
   updateFeederSchema,
   updateFeederStatusSchema,
   getFeedersQuerySchema,
+  deleteFeederSchema,
 } from './feeder.validation.js';
 import { authenticate } from '../../middleware/authenticate.js';
 import { authorize } from '../../middleware/authorize.js';
@@ -34,6 +35,6 @@ router.patch(
   validate(updateFeederStatusSchema),
   FeederController.updateStatus,
 );
-router.delete('/:id', authorize('ADMIN'), FeederController.delete);
+router.delete('/:id', authorize('ADMIN'), validate(deleteFeederSchema), FeederController.delete);
 
 export default router;

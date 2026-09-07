@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { env } from '../lib/env.js';
 import { UnauthorizedError } from '../lib/errors.js';
 import { prisma } from '../lib/prisma.js';
+import { redis } from '../lib/redis.js';
 import { Role } from '@prisma/client';
 
 export interface AuthUser {
@@ -30,6 +31,12 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
 
     try {
       const decoded = jwt.verify(token, env.JWT_SECRET) as AuthUser;
+
+      // Check if session exists in redis (to handle logout properly)
+      const session = await redis.get(`session:${decoded.id}`);
+      if (!session) {
+        throw new UnauthorizedError('Session expired or logged out');
+      }
 
       // Optionally verify user still exists and isn't deleted
       const user = await prisma.user.findUnique({ where: { id: decoded.id } });

@@ -73,6 +73,17 @@ export class ScheduleService {
       }
     }
 
+    // 5. Fairness validation warning check
+    const fairnessStats = await ScheduleService.getFairnessStats();
+    const feederStats = fairnessStats.feeders.find(f => f.feederId === data.feederId);
+    if (feederStats && fairnessStats.averageSystemHours > 0) {
+      const diffPercentage = feederStats.deviationFromAverage / fairnessStats.averageSystemHours;
+      if (diffPercentage > 0.4) {
+        const fWarn = `Fairness warning: This feeder has been shed ${Math.round(diffPercentage * 100)}% more than the system average this month.`;
+        warning = warning ? `${warning}. ${fWarn}` : fWarn;
+      }
+    }
+
     await createAuditLog({
       userId,
       action: 'CREATE',

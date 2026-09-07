@@ -16,7 +16,7 @@ export class UserController {
   static async updateProfile(req: Request, res: Response, next: NextFunction) {
     try {
       const updateData = { ...req.body };
-      
+
       if (req.file) {
         updateData.avatar = await uploadToCloudinary(req.file.buffer, 'powerbank/avatars');
       }

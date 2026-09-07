@@ -48,4 +48,16 @@ export class BillController {
       next(error);
     }
   }
+
+  static async processOverdue(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await BillService.processOverdueBills();
+      sendSuccess(res, { 
+        message: 'Processed overdue bills successfully',
+        data: result 
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }

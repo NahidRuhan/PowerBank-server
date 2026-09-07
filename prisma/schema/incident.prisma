@@ -3,17 +3,37 @@ model OutageIncident {
   feederId             String
   description          String
   photoUrl             String?
-  status               IncidentStatus @default(INVESTIGATING)
+  status               IncidentStatus @default(REPORTED)
+  priority             Priority       @default(MEDIUM)
   estimatedRestoration DateTime?
   resolvedAt           DateTime?
   createdBy            String
+  assignedToId         String?
   deletedAt            DateTime?
   createdAt            DateTime       @default(now())
   updatedAt            DateTime       @updatedAt
 
-  feeder  Feeder @relation(fields: [feederId], references: [id])
-  creator User   @relation(fields: [createdBy], references: [id])
+  feeder   Feeder         @relation(fields: [feederId], references: [id])
+  creator  User           @relation("IncidentCreator", fields: [createdBy], references: [id])
+  assignee User?          @relation("IncidentAssignee", fields: [assignedToId], references: [id])
+  reports  OutageReport[]
 
   @@index([feederId])
   @@index([status])
+  @@index([priority])
+}
+
+model OutageReport {
+  id          String   @id @default(cuid())
+  incidentId  String
+  userId      String
+  description String
+  photoUrl    String?
+  createdAt   DateTime @default(now())
+
+  incident OutageIncident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  user     User           @relation("UserReports", fields: [userId], references: [id])
+
+  @@index([incidentId])
+  @@index([userId])
 }

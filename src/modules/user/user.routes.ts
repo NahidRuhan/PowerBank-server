@@ -10,7 +10,12 @@ const router = Router();
 router.use(authenticate);
 
 router.get('/me', UserController.getProfile);
-router.patch('/me', upload.single('avatar'), validate(updateProfileSchema), UserController.updateProfile);
+router.patch(
+  '/me',
+  upload.single('avatar'),
+  validate(updateProfileSchema),
+  UserController.updateProfile,
+);
 router.patch('/me/password', validate(changePasswordSchema), UserController.changePassword);
 
 export default router;

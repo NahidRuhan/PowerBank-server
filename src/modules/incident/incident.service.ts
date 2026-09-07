@@ -8,46 +8,72 @@ export class IncidentService {
   static async create(data: any, userId: string) {
     const feeder = await prisma.feeder.findUnique({
       where: { id: data.feederId },
+      include: { areas: true },
     });
 
     if (!feeder) throw new NotFoundError('Feeder not found');
 
-    // 1. Create incident and update feeder status to FAULT
-    const incident = await prisma.$transaction(async (tx) => {
-      const inc = await tx.outageIncident.create({
-        data: {
-          feederId: data.feederId,
-          description: data.description,
-          photoUrl: data.photoUrl,
-          estimatedRestoration: data.estimatedRestoration
-            ? new Date(data.estimatedRestoration)
-            : null,
-          createdBy: userId,
-        },
-      });
-
-      // Sync Feeder status
-      await tx.feeder.update({
-        where: { id: data.feederId },
-        data: { status: 'FAULT' },
-      });
-
-      return inc;
+    let incident = await prisma.outageIncident.findFirst({
+      where: { feederId: data.feederId, status: { not: 'RESOLVED' }, deletedAt: null }
     });
 
-    await createAuditLog({
-      userId,
-      action: 'CREATE',
-      entity: 'OutageIncident',
-      entityId: incident.id,
-      changes: { new: incident },
-    });
+    if (!incident) {
+      // Determine priority from highest-priority Area
+      let priority: any = 'MEDIUM';
+      const priorities = feeder.areas.map((a) => a.priority);
+      if (priorities.includes('CRITICAL')) priority = 'CRITICAL';
+      else if (priorities.includes('HIGH')) priority = 'HIGH';
+      else if (priorities.includes('MEDIUM')) priority = 'MEDIUM';
+      else if (priorities.includes('LOW')) priority = 'LOW';
 
-    NotificationService.notifyAffectedCustomers(
-      data.feederId,
-      'Unexpected Power Outage',
-      `An unexpected power outage has been reported in your area. Description: ${data.description}. Our team is investigating.`,
-    );
+      // 1. Create incident and update feeder status to FAULT
+      incident = await prisma.$transaction(async (tx) => {
+        const inc = await tx.outageIncident.create({
+          data: {
+            feederId: data.feederId,
+            description: data.description,
+            photoUrl: data.photoUrl,
+            priority,
+            estimatedRestoration: data.estimatedRestoration
+              ? new Date(data.estimatedRestoration)
+              : null,
+            createdBy: userId,
+          },
+        });
+
+        // Sync Feeder status
+        await tx.feeder.update({
+          where: { id: data.feederId },
+          data: { status: 'FAULT' },
+        });
+
+        return inc;
+      });
+
+      await createAuditLog({
+        userId,
+        action: 'CREATE',
+        entity: 'OutageIncident',
+        entityId: incident.id,
+        changes: { to: incident },
+      });
+
+      NotificationService.notifyAffectedCustomers(
+        data.feederId,
+        'Unexpected Power Outage',
+        `An unexpected power outage has been reported in your area. Description: ${data.description}. Our team is investigating.`,
+      );
+    }
+
+    // Always link report to incident
+    await prisma.outageReport.create({
+      data: {
+        incidentId: incident.id,
+        userId,
+        description: data.description,
+        photoUrl: data.photoUrl,
+      }
+    });
 
     return incident;
   }
@@ -68,10 +94,15 @@ export class IncidentService {
         include: {
           feeder: { select: { name: true, code: true } },
           creator: { select: { name: true } },
+          reports: true,
         },
       }),
       prisma.outageIncident.count({ where }),
     ]);
+
+    // Sort by priority CRITICAL -> HIGH -> MEDIUM -> LOW
+    const priorityWeight: Record<string, number> = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
+    incidents.sort((a, b) => priorityWeight[b.priority] - priorityWeight[a.priority]);
 
     return {
       incidents,
@@ -90,6 +121,7 @@ export class IncidentService {
       include: {
         feeder: { select: { name: true, code: true } },
         creator: { select: { name: true } },
+        reports: { include: { user: { select: { name: true } } } },
       },
     });
 
@@ -105,9 +137,29 @@ export class IncidentService {
       throw new ValidationError('Cannot update a resolved incident');
     }
 
+    if (data.status) {
+      const order = { 'REPORTED': 0, 'ACKNOWLEDGED': 1, 'IN_PROGRESS': 2, 'RESOLVED': 3 };
+      const currentIdx = order[incident.status as keyof typeof order];
+      const targetIdx = order[data.status as keyof typeof order];
+      
+      if (data.status !== 'CANCELLED' && targetIdx !== undefined && currentIdx !== undefined) {
+         if (targetIdx !== currentIdx && targetIdx !== currentIdx + 1) {
+             throw new ValidationError(`Invalid state transition from ${incident.status} to ${data.status}. State transitions must be strictly sequential.`);
+         }
+      }
+    }
+
     const updateData: any = { ...data };
     if (data.estimatedRestoration) {
       updateData.estimatedRestoration = new Date(data.estimatedRestoration);
+    }
+    
+    if (data.assignedToId) {
+      const assignee = await prisma.user.findUnique({ where: { id: data.assignedToId } });
+      if (!assignee || assignee.role !== 'OPERATOR') {
+        throw new ValidationError('Assignee must be an OPERATOR');
+      }
+      updateData.assignedToId = data.assignedToId;
     }
 
     let syncFeeder = false;
@@ -151,7 +203,7 @@ export class IncidentService {
       action: 'UPDATE',
       entity: 'OutageIncident',
       entityId: id,
-      changes: { old: incident, new: updated },
+      changes: { from: incident, to: updated },
     });
 
     if (data.status === 'RESOLVED') {
@@ -168,6 +220,12 @@ export class IncidentService {
         incident.feederId,
         'Outage Update: Estimated Restoration Time',
         `The estimated restoration time for the current outage in your area has been updated to: ${updated.estimatedRestoration?.toLocaleString()}`,
+      );
+    } else if (data.assignedToId && updated.assignedToId !== incident.assignedToId) {
+       NotificationService.notifyAffectedCustomers(
+        incident.feederId,
+        'Outage Update: Technician Assigned',
+        'A technician has been assigned to resolve the power outage in your area.',
       );
     }
 

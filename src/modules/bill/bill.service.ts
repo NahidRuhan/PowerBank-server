@@ -114,4 +114,45 @@ export class BillService {
 
     return bill;
   }
+
+  static async processOverdueBills() {
+    const now = new Date();
+    
+    // Find bills that are UNPAID and past their due date
+    const overdueBills = await prisma.bill.findMany({
+      where: {
+        status: 'UNPAID',
+        dueDate: { lt: now },
+        deletedAt: null,
+      },
+    });
+
+    let processedCount = 0;
+
+    for (const bill of overdueBills) {
+      const surcharge = bill.amount * 0.05; // 5% surcharge
+      const newTotal = bill.amount + surcharge;
+
+      await prisma.bill.update({
+        where: { id: bill.id },
+        data: {
+          status: 'OVERDUE',
+          totalAmount: newTotal,
+        },
+      });
+      processedCount++;
+    }
+
+    if (processedCount > 0) {
+      await createAuditLog({
+        userId: 'system',
+        action: 'PROCESS_OVERDUE_BILLS',
+        entity: 'Bill',
+        entityId: 'batch',
+        changes: { processedCount },
+      });
+    }
+
+    return { processedCount };
+  }
 }

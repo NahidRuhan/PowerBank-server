@@ -90,23 +90,31 @@ export class AdminService {
       };
     });
 
-    // Determine fairness (most/least shed feeders based on completed schedules)
-    const scheduleGroups = await prisma.scheduledOutage.groupBy({
-      by: ['feederId'],
-      _count: { id: true },
-      where: { status: 'COMPLETED' },
-      orderBy: { _count: { id: 'desc' } },
-    });
+    // Determine fairness (most/least shed feeders based on hours)
+    const { ScheduleService } = await import('../schedule/schedule.service.js');
+    const fairnessStats = await ScheduleService.getFairnessStats();
+    
+    let mostShedFeeder = null;
+    let leastShedFeeder = null;
 
-    let mostShed = null;
-    let leastShed = null;
-    let avgShed = 0;
+    if (fairnessStats.feeders.length > 0) {
+      const most = fairnessStats.feeders[0];
+      const least = fairnessStats.feeders[fairnessStats.feeders.length - 1];
+      
+      const feederCodes = await prisma.feeder.findMany({
+        where: { id: { in: [most.feederId, least.feederId] } },
+        select: { id: true, code: true }
+      });
 
-    if (scheduleGroups.length > 0) {
-      mostShed = scheduleGroups[0];
-      leastShed = scheduleGroups[scheduleGroups.length - 1];
-      const totalCompleted = scheduleGroups.reduce((sum, g) => sum + g._count.id, 0);
-      avgShed = totalCompleted / scheduleGroups.length;
+      mostShedFeeder = {
+        code: feederCodes.find(f => f.id === most.feederId)?.code || most.feederName,
+        hoursThisMonth: most.totalHours,
+      };
+
+      leastShedFeeder = {
+        code: feederCodes.find(f => f.id === least.feederId)?.code || least.feederName,
+        hoursThisMonth: least.totalHours,
+      };
     }
 
     const data = {
@@ -130,9 +138,9 @@ export class AdminService {
         overdue: billsOverdue,
       },
       fairness: {
-        mostShedFeederId: mostShed?.feederId || null,
-        leastShedFeederId: leastShed?.feederId || null,
-        averageShedEvents: avgShed,
+        mostShedFeeder,
+        leastShedFeeder,
+        averageHoursPerFeeder: fairnessStats.averageSystemHours,
       },
       topAffectedAreas,
     };

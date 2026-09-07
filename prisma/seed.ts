@@ -5,7 +5,9 @@ import { prisma } from '../src/lib/prisma';
 async function main() {
   console.log('🧹 Wiping existing database...');
   // Hard delete all tables to avoid soft-delete unique constraint issues
-  await prisma.$executeRawUnsafe(`TRUNCATE TABLE "Payment", "Bill", "OutageIncident", "ScheduledOutage", "SheddingQuota", "Area", "Feeder", "Substation", "DistributionZone", "AuditLog", "User" CASCADE;`);
+  await prisma.$executeRawUnsafe(
+    `TRUNCATE TABLE "Meter", "Payment", "Bill", "OutageIncident", "ScheduledOutage", "SheddingQuota", "Area", "Feeder", "Substation", "DistributionZone", "AuditLog", "User" CASCADE;`,
+  );
 
   console.log('🌱 Seeding fresh data...');
 
@@ -24,20 +26,32 @@ async function main() {
   });
 
   const operator1 = await prisma.user.create({
-    data: { email: 'operator1@powerbank.com', name: 'Grid Operator Alpha', password: passwordHash, role: Role.OPERATOR, isVerified: true },
+    data: {
+      email: 'operator1@powerbank.com',
+      name: 'Grid Operator Alpha',
+      password: passwordHash,
+      role: Role.OPERATOR,
+      isVerified: true,
+    },
   });
   const operator2 = await prisma.user.create({
-    data: { email: 'operator2@powerbank.com', name: 'Grid Operator Beta', password: passwordHash, role: Role.OPERATOR, isVerified: true },
+    data: {
+      email: 'operator2@powerbank.com',
+      name: 'Grid Operator Beta',
+      password: passwordHash,
+      role: Role.OPERATOR,
+      isVerified: true,
+    },
   });
 
   // --- 2. Infrastructure ---
   console.log('Creating infrastructure (Zones, Substations, Feeders, Areas)...');
-  
+
   // Zone 1
   const zoneNorth = await prisma.distributionZone.create({
     data: { name: 'Dhaka North', code: 'DHK-NORTH', description: 'Northern part of Dhaka city' },
   });
-  
+
   // Zone 2
   const zoneSouth = await prisma.distributionZone.create({
     data: { name: 'Dhaka South', code: 'DHK-SOUTH', description: 'Southern part of Dhaka city' },
@@ -51,56 +65,162 @@ async function main() {
     data: { name: 'Uttara Grid Substation', code: 'UTT-01', capacityMW: 150, zoneId: zoneNorth.id },
   });
   const subMotijheel = await prisma.substation.create({
-    data: { name: 'Motijheel Commercial Substation', code: 'MOT-01', capacityMW: 300, zoneId: zoneSouth.id },
+    data: {
+      name: 'Motijheel Commercial Substation',
+      code: 'MOT-01',
+      capacityMW: 300,
+      zoneId: zoneSouth.id,
+    },
   });
 
   // Feeders
   const feederMirpur1 = await prisma.feeder.create({
-    data: { name: 'Mirpur F1 (Residential)', code: 'MIR-10-F1', loadMW: 25, substationId: subMirpur.id, status: 'ENERGIZED' },
+    data: {
+      name: 'Mirpur F1 (Residential)',
+      code: 'MIR-10-F1',
+      loadMW: 25,
+      substationId: subMirpur.id,
+      status: 'ENERGIZED',
+    },
   });
   const feederMirpur2 = await prisma.feeder.create({
-    data: { name: 'Mirpur F2 (Commercial)', code: 'MIR-10-F2', loadMW: 40, substationId: subMirpur.id, status: 'ENERGIZED' },
+    data: {
+      name: 'Mirpur F2 (Commercial)',
+      code: 'MIR-10-F2',
+      loadMW: 40,
+      substationId: subMirpur.id,
+      status: 'ENERGIZED',
+    },
   });
   const feederUttara1 = await prisma.feeder.create({
-    data: { name: 'Uttara F1', code: 'UTT-01-F1', loadMW: 30, substationId: subUttara.id, status: 'ENERGIZED' },
+    data: {
+      name: 'Uttara F1',
+      code: 'UTT-01-F1',
+      loadMW: 30,
+      substationId: subUttara.id,
+      status: 'ENERGIZED',
+    },
   });
   const feederMotijheel1 = await prisma.feeder.create({
-    data: { name: 'Motijheel Central', code: 'MOT-01-F1', loadMW: 80, substationId: subMotijheel.id, status: 'ENERGIZED' },
+    data: {
+      name: 'Motijheel Central',
+      code: 'MOT-01-F1',
+      loadMW: 80,
+      substationId: subMotijheel.id,
+      status: 'ENERGIZED',
+    },
   });
 
   // Areas
   const areaPallabi = await prisma.area.create({
-    data: { name: 'Pallabi Phase 1', code: 'PALLABI-1', priority: 'MEDIUM', customerCount: 2000, feederId: feederMirpur1.id },
+    data: {
+      name: 'Pallabi Phase 1',
+      code: 'PALLABI-1',
+      priority: 'MEDIUM',
+      customerCount: 2000,
+      feederId: feederMirpur1.id,
+    },
   });
   const areaMirpur10 = await prisma.area.create({
-    data: { name: 'Mirpur 10 Circle', code: 'MIR-10-C', priority: 'HIGH', customerCount: 1500, feederId: feederMirpur2.id },
+    data: {
+      name: 'Mirpur 10 Circle',
+      code: 'MIR-10-C',
+      priority: 'HIGH',
+      customerCount: 1500,
+      feederId: feederMirpur2.id,
+    },
   });
   const areaUttaraSec4 = await prisma.area.create({
-    data: { name: 'Uttara Sector 4', code: 'UTT-S4', priority: 'MEDIUM', customerCount: 3000, feederId: feederUttara1.id },
+    data: {
+      name: 'Uttara Sector 4',
+      code: 'UTT-S4',
+      priority: 'MEDIUM',
+      customerCount: 3000,
+      feederId: feederUttara1.id,
+    },
   });
   const areaDilkusha = await prisma.area.create({
-    data: { name: 'Dilkusha C/A', code: 'DILKUSHA', priority: 'CRITICAL', customerCount: 500, feederId: feederMotijheel1.id },
+    data: {
+      name: 'Dilkusha C/A',
+      code: 'DILKUSHA',
+      priority: 'CRITICAL',
+      customerCount: 500,
+      feederId: feederMotijheel1.id,
+    },
+  });
+
+  // --- 2.5 Meters ---
+  console.log('Creating meters...');
+  const meter1 = await prisma.meter.create({
+    data: { number: 'MTR-001', areaId: areaPallabi.id },
+  });
+  const meter2 = await prisma.meter.create({
+    data: { number: 'MTR-002', areaId: areaMirpur10.id },
+  });
+  const meter3 = await prisma.meter.create({
+    data: { number: 'MTR-003', areaId: areaUttaraSec4.id },
+  });
+  const meter4 = await prisma.meter.create({
+    data: { number: 'MTR-004', areaId: areaDilkusha.id },
   });
 
   // --- 3. Customers ---
   console.log('Creating customers...');
   const customer1 = await prisma.user.create({
-    data: { email: 'customer1@powerbank.com', name: 'Test Customer 1', password: passwordHash, role: Role.CUSTOMER, meterNumber: 'MTR-001', areaId: areaPallabi.id, isVerified: true },
+    data: {
+      email: 'customer1@powerbank.com',
+      name: 'Test Customer 1',
+      password: passwordHash,
+      role: Role.CUSTOMER,
+      meterNumber: 'MTR-001',
+      areaId: areaPallabi.id,
+      isVerified: true,
+    },
   });
   const customer2 = await prisma.user.create({
-    data: { email: 'customer2@powerbank.com', name: 'Test Customer 2', password: passwordHash, role: Role.CUSTOMER, meterNumber: 'MTR-002', areaId: areaMirpur10.id, isVerified: true },
+    data: {
+      email: 'customer2@powerbank.com',
+      name: 'Test Customer 2',
+      password: passwordHash,
+      role: Role.CUSTOMER,
+      meterNumber: 'MTR-002',
+      areaId: areaMirpur10.id,
+      isVerified: true,
+    },
   });
   const customer3 = await prisma.user.create({
-    data: { email: 'customer3@powerbank.com', name: 'Test Customer 3', password: passwordHash, role: Role.CUSTOMER, meterNumber: 'MTR-003', areaId: areaUttaraSec4.id, isVerified: true },
+    data: {
+      email: 'customer3@powerbank.com',
+      name: 'Test Customer 3',
+      password: passwordHash,
+      role: Role.CUSTOMER,
+      meterNumber: 'MTR-003',
+      areaId: areaUttaraSec4.id,
+      isVerified: true,
+    },
   });
   const customer4 = await prisma.user.create({
-    data: { email: 'customer4@powerbank.com', name: 'Test Customer 4', password: passwordHash, role: Role.CUSTOMER, meterNumber: 'MTR-004', areaId: areaDilkusha.id, isVerified: true },
+    data: {
+      email: 'customer4@powerbank.com',
+      name: 'Test Customer 4',
+      password: passwordHash,
+      role: Role.CUSTOMER,
+      meterNumber: 'MTR-004',
+      areaId: areaDilkusha.id,
+      isVerified: true,
+    },
   });
+
+  // Link meters to users
+  await prisma.meter.update({ where: { id: meter1.id }, data: { userId: customer1.id } });
+  await prisma.meter.update({ where: { id: meter2.id }, data: { userId: customer2.id } });
+  await prisma.meter.update({ where: { id: meter3.id }, data: { userId: customer3.id } });
+  await prisma.meter.update({ where: { id: meter4.id }, data: { userId: customer4.id } });
 
   // --- 4. Quotas & Schedules ---
   console.log('Creating quotas and schedules...');
   const now = new Date();
-  
+
   const quota = await prisma.sheddingQuota.create({
     data: {
       date: new Date(),
@@ -122,7 +242,7 @@ async function main() {
       createdBy: operator1.id,
     },
   });
-  
+
   // Future scheduled outage for Mirpur 1
   await prisma.scheduledOutage.create({
     data: {
@@ -144,13 +264,13 @@ async function main() {
 
   // --- 5. Incidents ---
   console.log('Creating incidents...');
-  
+
   // Investigating incident
   await prisma.outageIncident.create({
     data: {
-      feederId: feederMirpur2.id,
+      feederId: feederMirpur1.id,
       description: 'Underground cable fault reported near Circle',
-      status: 'INVESTIGATING',
+      status: 'REPORTED',
       createdBy: operator1.id,
     },
   });
@@ -159,10 +279,11 @@ async function main() {
   await prisma.outageIncident.create({
     data: {
       feederId: feederMotijheel1.id,
-      description: 'Transformer blown, maintenance team dispatched',
-      status: 'REPAIRING',
-      estimatedRestoration: new Date(now.getTime() + 4 * 60 * 60 * 1000), // 4 hours from now
-      createdBy: operator2.id,
+      description: 'Transformer blown, replacement in transit',
+      status: 'IN_PROGRESS',
+      estimatedRestoration: new Date(now.getTime() + 4 * 60 * 60 * 1000), // +4 hours
+      createdBy: operator1.id,
+      assignedToId: operator2.id,
     },
   });
 
@@ -174,7 +295,7 @@ async function main() {
 
   // --- 6. Bills & Payments ---
   console.log('Creating bills and payments...');
-  
+
   // Unpaid bill
   const bill1 = await prisma.bill.create({
     data: {
@@ -185,7 +306,7 @@ async function main() {
       totalAmount: 1200,
       dueDate: new Date(now.getFullYear(), now.getMonth(), 15),
       status: 'UNPAID',
-    }
+    },
   });
 
   // Paid bill with a succeeded payment
@@ -198,9 +319,9 @@ async function main() {
       totalAmount: 4500,
       dueDate: new Date(now.getFullYear(), now.getMonth(), 15),
       status: 'PAID',
-    }
+    },
   });
-  
+
   await prisma.payment.create({
     data: {
       billId: bill2.id,
@@ -210,7 +331,7 @@ async function main() {
       status: 'SUCCEEDED',
       stripeSessionId: 'cs_test_mock12345',
       stripePaymentId: 'pi_test_mock12345',
-    }
+    },
   });
 
   // Overdue bill with a failed payment attempt
@@ -224,7 +345,7 @@ async function main() {
       totalAmount: 2600,
       dueDate: new Date(now.getFullYear(), now.getMonth() - 1, 15),
       status: 'OVERDUE',
-    }
+    },
   });
 
   await prisma.payment.create({
@@ -235,7 +356,7 @@ async function main() {
       currency: 'BDT',
       status: 'FAILED',
       stripeSessionId: 'cs_test_mockfailed',
-    }
+    },
   });
 
   console.log('✅ Seeding completed perfectly!');

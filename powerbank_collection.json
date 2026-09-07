@@ -37,7 +37,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"admin2@powerbank.com\",\n  \"password\": \"password123\",\n  \"name\": \"New Admin\"\n}"
+              "raw": "{\n  \"email\": \"admin2@powerbank.com\",\n  \"password\": \"password123\",\n  \"name\": \"New Admin\",\n  \"phoneNumber\": \"+8801700000000\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/auth/register",
@@ -156,6 +156,58 @@
               "path": [
                 "auth",
                 "logout"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"customer1@powerbank.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/forgot-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "forgot-password"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"customer1@powerbank.com\",\n  \"otp\": \"123456\",\n  \"newPassword\": \"newpassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/reset-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "reset-password"
               ]
             }
           }
@@ -497,6 +549,68 @@
               ]
             }
           }
+        },
+        {
+          "name": "Update Substation",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"capacityMW\": 160\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/substations/REPLACE_WITH_SUBSTATION_ID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "substations",
+                "REPLACE_WITH_SUBSTATION_ID"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Substation",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/substations/REPLACE_WITH_SUBSTATION_ID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "substations",
+                "REPLACE_WITH_SUBSTATION_ID"
+              ]
+            }
+          }
         }
       ]
     },
@@ -600,6 +714,32 @@
               ]
             }
           }
+        },
+        {
+          "name": "Delete Feeder",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/feeders/REPLACE_WITH_FEEDER_ID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "feeders",
+                "REPLACE_WITH_FEEDER_ID"
+              ]
+            }
+          }
         }
       ]
     },
@@ -696,6 +836,68 @@
                   "key": "q",
                   "value": "Mirpur"
                 }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Area",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"priority\": \"HIGH\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/areas/REPLACE_WITH_AREA_ID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "areas",
+                "REPLACE_WITH_AREA_ID"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Area",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/areas/REPLACE_WITH_AREA_ID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "areas",
+                "REPLACE_WITH_AREA_ID"
               ]
             }
           }
@@ -1143,6 +1345,33 @@
               ]
             }
           }
+        },
+        {
+          "name": "Process Overdue Bills",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bills/process-overdue",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bills",
+                "process-overdue"
+              ]
+            }
+          }
         }
       ]
     },
@@ -1384,6 +1613,99 @@
               "path": [
                 "admin",
                 "audit-logs"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "13. Meters",
+      "item": [
+        {
+          "name": "Create Meter",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"number\": \"MTR-999\",\n  \"areaId\": \"REPLACE_WITH_AREA_ID\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/meters",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "meters"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get All Meters",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/meters",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "meters"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Meter",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/meters/REPLACE_WITH_METER_ID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "meters",
+                "REPLACE_WITH_METER_ID"
               ]
             }
           }

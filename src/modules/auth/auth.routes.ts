@@ -3,7 +3,13 @@ import passport from 'passport';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
 import { validate } from '../../middleware/validate.js';
-import { registerSchema, loginSchema, refreshTokenSchema } from './auth.validation.js';
+import {
+  registerSchema,
+  loginSchema,
+  refreshTokenSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+} from './auth.validation.js';
 import { authenticate } from '../../middleware/authenticate.js';
 import { authLimiter } from '../../middleware/rateLimiter.js';
 
@@ -13,6 +19,18 @@ router.post('/register', authLimiter, validate(registerSchema), AuthController.r
 router.post('/login', authLimiter, validate(loginSchema), AuthController.login);
 router.post('/refresh-token', validate(refreshTokenSchema), AuthController.refreshToken);
 router.post('/logout', authenticate, AuthController.logout);
+router.post(
+  '/forgot-password',
+  authLimiter,
+  validate(forgotPasswordSchema),
+  AuthController.forgotPassword,
+);
+router.post(
+  '/reset-password',
+  authLimiter,
+  validate(resetPasswordSchema),
+  AuthController.resetPassword,
+);
 
 router.get(
   '/google',

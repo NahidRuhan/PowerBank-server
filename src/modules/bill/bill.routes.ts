@@ -22,6 +22,11 @@ router.get(
   validate(getBillsQuerySchema),
   BillController.getMyBills,
 );
+router.post(
+  '/process-overdue',
+  authorize('ADMIN'),
+  BillController.processOverdue,
+);
 router.get('/:id', BillController.getById);
 
 export default router;

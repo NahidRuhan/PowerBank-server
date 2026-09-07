@@ -10,11 +10,20 @@ export const createSubstationSchema = z.object({
 });
 
 export const updateSubstationSchema = z.object({
+  params: z.object({
+    id: z.string().cuid(),
+  }),
   body: z.object({
     name: z.string().min(2).optional(),
     code: z.string().min(2).optional(),
     capacityMW: z.number().positive().optional(),
     zoneId: z.string().cuid().optional(),
+  }),
+});
+
+export const deleteSubstationSchema = z.object({
+  params: z.object({
+    id: z.string().cuid(),
   }),
 });
 

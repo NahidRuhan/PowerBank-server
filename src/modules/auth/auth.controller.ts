@@ -40,4 +40,22 @@ export class AuthController {
       next(error);
     }
   }
+
+  static async forgotPassword(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await AuthService.forgotPassword(req.body.email);
+      return sendSuccess(res, result, 'Password reset initiated');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async resetPassword(req: Request, res: Response, next: NextFunction) {
+    try {
+      await AuthService.resetPassword(req.body);
+      return sendSuccess(res, null, 'Password reset successful');
+    } catch (error) {
+      next(error);
+    }
+  }
 }

@@ -64,7 +64,22 @@ model Area {
   feeder Feeder @relation(fields: [feederId], references: [id])
   users  User[]
   bills  Bill[]
+  meters Meter[]
 
   @@index([feederId])
   @@index([priority])
+}
+
+model Meter {
+  id        String   @id @default(cuid())
+  number    String   @unique
+  areaId    String
+  userId    String?  @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  area Area  @relation(fields: [areaId], references: [id])
+  user User? @relation(fields: [userId], references: [id])
+  
+  @@index([areaId])
 }

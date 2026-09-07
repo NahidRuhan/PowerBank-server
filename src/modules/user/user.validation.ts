@@ -5,6 +5,7 @@ export const updateProfileSchema = z.object({
     name: z.string().min(2).optional(),
     avatar: z.string().url().optional(),
     meterNumber: z.string().optional(),
+    phoneNumber: z.string().optional(),
   }),
 });
 

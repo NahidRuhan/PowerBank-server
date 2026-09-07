@@ -26,9 +26,9 @@ enum ScheduleStatus {
 }
 
 enum IncidentStatus {
-  INVESTIGATING
-  IDENTIFIED
-  REPAIRING
+  REPORTED
+  ACKNOWLEDGED
+  IN_PROGRESS
   RESOLVED
 }
 

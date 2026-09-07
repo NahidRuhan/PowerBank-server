@@ -5,6 +5,7 @@ import {
   createSubstationSchema,
   updateSubstationSchema,
   getSubstationsQuerySchema,
+  deleteSubstationSchema,
 } from './substation.validation.js';
 import { authenticate } from '../../middleware/authenticate.js';
 import { authorize } from '../../middleware/authorize.js';
@@ -27,6 +28,11 @@ router.patch(
   validate(updateSubstationSchema),
   SubstationController.update,
 );
-router.delete('/:id', authorize('ADMIN'), SubstationController.delete);
+router.delete(
+  '/:id',
+  authorize('ADMIN'),
+  validate(deleteSubstationSchema),
+  SubstationController.delete,
+);
 
 export default router;

@@ -17,6 +17,7 @@ import incidentRoutes from './modules/incident/incident.routes.js';
 import billRoutes from './modules/bill/bill.routes.js';
 import paymentRoutes from './modules/payment/payment.routes.js';
 import adminRoutes from './modules/admin/admin.routes.js';
+import { meterRoutes } from './modules/meter/meter.routes.js';
 
 import './config/passport.js'; // Initialize passport
 
@@ -43,7 +44,7 @@ app.get('/', (req, res) => {
   res.json({
     success: true,
     message: 'Welcome to the PowerBank API! Server is up and running.',
-    docs: 'Refer to Postman collection for API documentation'
+    docs: 'Refer to Postman collection for API documentation',
   });
 });
 
@@ -63,8 +64,9 @@ app.get('/api/v1', (req, res) => {
       '/api/v1/incidents',
       '/api/v1/bills',
       '/api/v1/payments',
-      '/api/v1/admin'
-    ]
+      '/api/v1/admin',
+      '/api/v1/meters',
+    ],
   });
 });
 
@@ -81,10 +83,11 @@ app.use('/api/v1/incidents', incidentRoutes);
 app.use('/api/v1/bills', billRoutes);
 app.use('/api/v1/payments', paymentRoutes);
 app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/meters', meterRoutes);
 
 // Simple frontend redirect routes for Stripe Checkout
 app.get('/payment-success', (req, res) => {
-    res.send(`
+  res.send(`
         <html>
             <body style="font-family: sans-serif; text-align: center; padding: 50px;">
                 <h1 style="color: #4CAF50;">✅ Payment Successful!</h1>
@@ -97,7 +100,7 @@ app.get('/payment-success', (req, res) => {
 });
 
 app.get('/payment-cancel', (req, res) => {
-    res.send(`
+  res.send(`
         <html>
             <body style="font-family: sans-serif; text-align: center; padding: 50px;">
                 <h1 style="color: #F44336;">❌ Payment Cancelled</h1>

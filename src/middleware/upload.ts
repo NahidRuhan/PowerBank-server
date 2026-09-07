@@ -7,7 +7,11 @@ const storage = multer.memoryStorage();
 
 // File filter (jpg, png, webp)
 const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png' || file.mimetype === 'image/webp') {
+  if (
+    file.mimetype === 'image/jpeg' ||
+    file.mimetype === 'image/png' ||
+    file.mimetype === 'image/webp'
+  ) {
     cb(null, true);
   } else {
     cb(new AppError('Invalid file type. Only JPG, PNG, and WebP are allowed.', 400));
@@ -38,9 +42,9 @@ export const uploadToCloudinary = async (fileBuffer: Buffer, folder: string): Pr
         } else {
           reject(new AppError('Unknown error during upload', 500));
         }
-      }
+      },
     );
-    
+
     uploadStream.end(fileBuffer);
   });
 };

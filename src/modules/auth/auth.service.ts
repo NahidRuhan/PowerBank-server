@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import { prisma } from '../../lib/prisma.js';
 import { redis } from '../../lib/redis.js';
 import { env } from '../../lib/env.js';
-import { ConflictError, UnauthorizedError } from '../../lib/errors.js';
+import { ConflictError, UnauthorizedError, NotFoundError } from '../../lib/errors.js';
 import { createAuditLog } from '../../lib/auditLog.js';
 
 export class AuthService {
@@ -16,13 +16,23 @@ export class AuthService {
       throw new ConflictError('User with this email already exists');
     }
 
+    let areaId: string | null = null;
+    let meterId: string | null = null;
+
     if (data.meterNumber) {
-      const existingMeter = await prisma.user.findUnique({
-        where: { meterNumber: data.meterNumber },
+      const meter = await prisma.meter.findUnique({
+        where: { number: data.meterNumber },
       });
-      if (existingMeter) {
-        throw new ConflictError('Meter number already registered');
+
+      if (!meter) {
+        throw new NotFoundError('Invalid meter number. Please contact the utility.');
       }
+      if (meter.userId) {
+        throw new ConflictError('Meter number already registered to another user');
+      }
+
+      areaId = meter.areaId;
+      meterId = meter.id;
     }
 
     const hashedPassword = await bcrypt.hash(data.password, 10);
@@ -33,9 +43,19 @@ export class AuthService {
         name: data.name,
         password: hashedPassword,
         meterNumber: data.meterNumber,
+        phoneNumber: data.phoneNumber,
+        avatar: data.avatar,
+        areaId: areaId,
         isVerified: true, // Auto verify for now
       },
     });
+
+    if (meterId) {
+      await prisma.meter.update({
+        where: { id: meterId },
+        data: { userId: user.id },
+      });
+    }
 
     await createAuditLog({
       userId: user.id,
@@ -105,5 +125,64 @@ export class AuthService {
       accessToken,
       refreshToken,
     };
+  }
+
+  static async forgotPassword(email: string) {
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      // Don't leak whether user exists or not
+      return { message: 'If the email exists, an OTP has been sent' };
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Store in redis with 5-minute expiry
+    await redis.set(`otp:${email}`, otp, 'EX', 300);
+
+    // In a real application, send this OTP via email or SMS
+    // For this assignment/API, we can just log it or return it in development
+    console.log(`[DEV ONLY] OTP for ${email} is ${otp}`);
+
+    await createAuditLog({
+      userId: user.id,
+      action: 'FORGOT_PASSWORD_REQUESTED',
+      entity: 'User',
+      entityId: user.id,
+    });
+
+    return { message: 'If the email exists, an OTP has been sent' };
+  }
+
+  static async resetPassword(data: any) {
+    const storedOtp = await redis.get(`otp:${data.email}`);
+
+    if (!storedOtp || storedOtp !== data.otp) {
+      throw new UnauthorizedError('Invalid or expired OTP');
+    }
+
+    const user = await prisma.user.findUnique({ where: { email: data.email } });
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    const hashedPassword = await bcrypt.hash(data.newPassword, 10);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { password: hashedPassword },
+    });
+
+    // Invalidate the OTP after successful use
+    await redis.del(`otp:${data.email}`);
+    // Invalidate all existing sessions
+    await redis.del(`session:${user.id}`);
+
+    await createAuditLog({
+      userId: user.id,
+      action: 'PASSWORD_RESET',
+      entity: 'User',
+      entityId: user.id,
+    });
   }
 }

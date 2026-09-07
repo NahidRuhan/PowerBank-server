@@ -6,6 +6,7 @@ import {
   updateAreaSchema,
   getAreasQuerySchema,
   searchAreasQuerySchema,
+  deleteAreaSchema,
 } from './area.validation.js';
 import { authenticate } from '../../middleware/authenticate.js';
 import { authorize } from '../../middleware/authorize.js';
@@ -24,6 +25,6 @@ router.patch(
   validate(updateAreaSchema),
   AreaController.update,
 );
-router.delete('/:id', authorize('ADMIN'), AreaController.delete);
+router.delete('/:id', authorize('ADMIN'), validate(deleteAreaSchema), AreaController.delete);
 
 export default router;

@@ -1,11 +1,14 @@
 import app from './app.js';
 import { env } from './lib/env.js';
 import { prisma } from './lib/prisma.js';
+import { initCronJobs } from './config/cron.js';
 
 const startServer = async () => {
   try {
     await prisma.$connect();
     console.log('✅ Connected to database');
+
+    initCronJobs();
 
     app.listen(env.PORT, () => {
       console.log(`🚀 Server is running on port ${env.PORT}`);

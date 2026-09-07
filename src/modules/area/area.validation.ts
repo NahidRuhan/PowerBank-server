@@ -11,12 +11,21 @@ export const createAreaSchema = z.object({
 });
 
 export const updateAreaSchema = z.object({
+  params: z.object({
+    id: z.string().cuid(),
+  }),
   body: z.object({
     name: z.string().min(2).optional(),
     code: z.string().min(2).optional(),
     feederId: z.string().cuid().optional(),
     priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']).optional(),
     customerCount: z.number().int().nonnegative().optional(),
+  }),
+});
+
+export const deleteAreaSchema = z.object({
+  params: z.object({
+    id: z.string().cuid(),
   }),
 });
 

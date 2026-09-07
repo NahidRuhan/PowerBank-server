@@ -16,11 +16,14 @@ model User {
 
   area             Area?             @relation(fields: [areaId], references: [id])
   auditLogs        AuditLog[]
-  createdQuotas    SheddingQuota[]
-  createdSchedules ScheduledOutage[]
-  outageIncidents  OutageIncident[]
-  bills            Bill[]
+  createdQuotas      SheddingQuota[]
+  createdSchedules   ScheduledOutage[]
+  createdIncidents   OutageIncident[]  @relation("IncidentCreator")
+  assignedIncidents  OutageIncident[]  @relation("IncidentAssignee")
+  reports            OutageReport[]    @relation("UserReports")
+  bills              Bill[]
   payments         Payment[]
+  meter            Meter?
 
   @@index([email])
   @@index([role])

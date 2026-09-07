@@ -10,6 +10,9 @@ export const createFeederSchema = z.object({
 });
 
 export const updateFeederSchema = z.object({
+  params: z.object({
+    id: z.string().cuid(),
+  }),
   body: z.object({
     name: z.string().min(2).optional(),
     code: z.string().min(2).optional(),
@@ -19,8 +22,17 @@ export const updateFeederSchema = z.object({
 });
 
 export const updateFeederStatusSchema = z.object({
+  params: z.object({
+    id: z.string().cuid(),
+  }),
   body: z.object({
     status: z.enum(['ENERGIZED', 'MAINTENANCE']), // Manual updates can only be these
+  }),
+});
+
+export const deleteFeederSchema = z.object({
+  params: z.object({
+    id: z.string().cuid(),
   }),
 });
 

@@ -7,7 +7,7 @@ export class IncidentController {
   static async create(req: Request, res: Response, next: NextFunction) {
     try {
       const data = { ...req.body };
-      
+
       if (req.file) {
         data.photoUrl = await uploadToCloudinary(req.file.buffer, 'powerbank/incidents');
       }
