@@ -4,7 +4,7 @@ import { createAuditLog } from '../../lib/auditLog.js';
 import { parsePagination } from '../../lib/pagination.js';
 
 export class SubstationService {
-  static async create(data: any, userId: string) {
+  static async create(data: { name: string; code: string; capacityMW: number; zoneId: string }, userId: string) {
     const existing = await prisma.substation.findUnique({
       where: { code: data.code },
     });
@@ -29,13 +29,13 @@ export class SubstationService {
       action: 'CREATE',
       entity: 'Substation',
       entityId: substation.id,
-      changes: { new: substation },
+      changes: { substation: { from: null, to: substation } },
     });
 
     return substation;
   }
 
-  static async getAll(query: any) {
+  static async getAll(query: { page?: string; limit?: string; search?: string; zoneId?: string }) {
     const { skip, take, page, limit } = parsePagination(query);
     const where: any = {};
 
@@ -95,9 +95,24 @@ export class SubstationService {
     return substation;
   }
 
-  static async update(id: string, data: any, userId: string) {
-    const substation = await prisma.substation.findUnique({ where: { id } });
+  static async update(id: string, data: { name?: string; code?: string; capacityMW?: number; zoneId?: string }, userId: string) {
+    const substation = await prisma.substation.findUnique({ 
+      where: { id },
+      include: {
+        feeders: {
+          where: { deletedAt: null },
+          select: { loadMW: true }
+        }
+      }
+    });
     if (!substation) throw new NotFoundError('Substation not found');
+
+    if (data.capacityMW !== undefined) {
+      const currentTotalLoad = substation.feeders.reduce((sum, f) => sum + f.loadMW, 0);
+      if (data.capacityMW < currentTotalLoad) {
+        throw new ConflictError(`Cannot reduce capacity below current total feeder load (${currentTotalLoad}MW)`);
+      }
+    }
 
     if (data.code && data.code !== substation.code) {
       const existing = await prisma.substation.findUnique({
@@ -127,7 +142,7 @@ export class SubstationService {
       action: 'UPDATE',
       entity: 'Substation',
       entityId: id,
-      changes: { old: substation, new: updated },
+      changes: { substation: { from: substation, to: updated } },
     });
 
     return updated;

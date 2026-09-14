@@ -4,7 +4,7 @@ import { createAuditLog } from '../../lib/auditLog.js';
 import { parsePagination } from '../../lib/pagination.js';
 
 export class ZoneService {
-  static async create(data: any, userId: string) {
+  static async create(data: { name: string; code: string; description?: string }, userId: string) {
     const existing = await prisma.distributionZone.findUnique({
       where: { code: data.code },
     });
@@ -22,13 +22,13 @@ export class ZoneService {
       action: 'CREATE',
       entity: 'DistributionZone',
       entityId: zone.id,
-      changes: { new: zone },
+      changes: { zone: { from: null, to: zone } },
     });
 
     return zone;
   }
 
-  static async getAll(query: any) {
+  static async getAll(query: { page?: string; limit?: string; search?: string }) {
     const { skip, take, page, limit } = parsePagination(query);
     const where: any = {};
 
@@ -82,7 +82,7 @@ export class ZoneService {
     return zone;
   }
 
-  static async update(id: string, data: any, userId: string) {
+  static async update(id: string, data: { name?: string; code?: string; description?: string }, userId: string) {
     const zone = await prisma.distributionZone.findUnique({ where: { id } });
     if (!zone) throw new NotFoundError('Zone not found');
 
@@ -105,7 +105,7 @@ export class ZoneService {
       action: 'UPDATE',
       entity: 'DistributionZone',
       entityId: id,
-      changes: { old: zone, new: updated },
+      changes: { zone: { from: zone, to: updated } },
     });
 
     return updated;
@@ -120,9 +120,9 @@ export class ZoneService {
     if (!zone) throw new NotFoundError('Zone not found');
 
     // Soft delete cascades down through manual Prisma updates
-    // In a real production system, you might want to do this in a transaction
+    // In a real production system, we might want to do this in a transaction
     // Here we'll soft-delete the zone, which is fine since our relations aren't strict cascading in code yet.
-    // Wait, the requirement says "cascade soft-delete (zone + substations + feeders + areas)"
+    // the requirement says "cascade soft-delete (zone + substations + feeders + areas)"
     await prisma.$transaction(async (tx) => {
       const now = new Date();
 

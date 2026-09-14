@@ -55,7 +55,7 @@ export class IncidentService {
         action: 'CREATE',
         entity: 'OutageIncident',
         entityId: incident.id,
-        changes: { to: incident },
+        changes: { incident: { from: null, to: incident } },
       });
 
       NotificationService.notifyAffectedCustomers(
@@ -203,7 +203,7 @@ export class IncidentService {
       action: 'UPDATE',
       entity: 'OutageIncident',
       entityId: id,
-      changes: { from: incident, to: updated },
+      changes: { incident: { from: incident, to: updated } },
     });
 
     if (data.status === 'RESOLVED') {

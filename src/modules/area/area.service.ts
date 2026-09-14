@@ -29,7 +29,7 @@ export class AreaService {
       action: 'CREATE',
       entity: 'Area',
       entityId: area.id,
-      changes: { new: area },
+      changes: { area: { from: null, to: area } },
     });
 
     return area;
@@ -141,7 +141,7 @@ export class AreaService {
       action: 'UPDATE',
       entity: 'Area',
       entityId: id,
-      changes: { old: area, new: updated },
+      changes: { area: { from: area, to: updated } },
     });
 
     return updated;

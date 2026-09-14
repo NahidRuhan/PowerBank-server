@@ -32,7 +32,7 @@ export class QuotaService {
       action: 'CREATE',
       entity: 'SheddingQuota',
       entityId: quota.id,
-      changes: { new: quota },
+      changes: { quota: { from: null, to: quota } },
     });
 
     return quota;

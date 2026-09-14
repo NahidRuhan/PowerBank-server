@@ -44,7 +44,7 @@ export class BillService {
       action: 'GENERATE_BILLS',
       entity: 'Bill',
       entityId: `month:${data.month}`,
-      changes: { generatedCount },
+      changes: { generatedCount: { from: 0, to: generatedCount } },
     });
 
     return { generatedCount };
@@ -149,7 +149,7 @@ export class BillService {
         action: 'PROCESS_OVERDUE_BILLS',
         entity: 'Bill',
         entityId: 'batch',
-        changes: { processedCount },
+        changes: { processedCount: { from: 0, to: processedCount } },
       });
     }
 

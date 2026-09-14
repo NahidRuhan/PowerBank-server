@@ -4,7 +4,7 @@ import { createAuditLog } from '../../lib/auditLog.js';
 import { parsePagination } from '../../lib/pagination.js';
 
 export class FeederService {
-  static async create(data: any, userId: string) {
+  static async create(data: { name: string; code: string; loadMW: number; substationId: string }, userId: string) {
     const existing = await prisma.feeder.findUnique({
       where: { code: data.code },
     });
@@ -13,11 +13,22 @@ export class FeederService {
       throw new ConflictError('Feeder with this code already exists');
     }
 
-    const substationExists = await prisma.substation.findUnique({
+    const substation = await prisma.substation.findUnique({
       where: { id: data.substationId },
+      include: {
+        feeders: { 
+          where: { deletedAt: null },
+          select: { loadMW: true } 
+        }
+      }
     });
-    if (!substationExists) {
+    if (!substation) {
       throw new NotFoundError('Substation not found');
+    }
+
+    const currentTotalLoad = substation.feeders.reduce((sum, f) => sum + f.loadMW, 0);
+    if (currentTotalLoad + data.loadMW > substation.capacityMW) {
+      throw new ConflictError(`Substation capacity exceeded. Current load: ${currentTotalLoad}MW, Capacity: ${substation.capacityMW}MW`);
     }
 
     const feeder = await prisma.feeder.create({
@@ -29,13 +40,13 @@ export class FeederService {
       action: 'CREATE',
       entity: 'Feeder',
       entityId: feeder.id,
-      changes: { new: feeder },
+      changes: { feeder: { from: null, to: feeder } },
     });
 
     return feeder;
   }
 
-  static async getAll(query: any) {
+  static async getAll(query: { page?: string; limit?: string; search?: string; substationId?: string; status?: string }) {
     const { skip, take, page, limit } = parsePagination(query);
     const where: any = {};
 
@@ -99,7 +110,7 @@ export class FeederService {
     return feeder;
   }
 
-  static async update(id: string, data: any, userId: string) {
+  static async update(id: string, data: { name?: string; code?: string; loadMW?: number; substationId?: string }, userId: string) {
     const feeder = await prisma.feeder.findUnique({ where: { id } });
     if (!feeder) throw new NotFoundError('Feeder not found');
 
@@ -112,12 +123,30 @@ export class FeederService {
       }
     }
 
-    if (data.substationId && data.substationId !== feeder.substationId) {
-      const subExists = await prisma.substation.findUnique({
-        where: { id: data.substationId },
+    // Check capacity if moving to a new substation or changing load
+    if (data.loadMW !== undefined || (data.substationId && data.substationId !== feeder.substationId)) {
+      const targetSubstationId = data.substationId || feeder.substationId;
+      const substation = await prisma.substation.findUnique({
+        where: { id: targetSubstationId },
+        include: {
+          feeders: { 
+            where: { deletedAt: null },
+            select: { id: true, loadMW: true } 
+          }
+        }
       });
-      if (!subExists) {
+      
+      if (!substation) {
         throw new NotFoundError('Substation not found');
+      }
+
+      // Exclude the current feeder from the sum (since we're updating its load or moving it)
+      const otherFeeders = substation.feeders.filter(f => f.id !== id);
+      const currentTotalLoad = otherFeeders.reduce((sum, f) => sum + f.loadMW, 0);
+      const newLoad = data.loadMW ?? feeder.loadMW;
+
+      if (currentTotalLoad + newLoad > substation.capacityMW) {
+        throw new ConflictError(`Substation capacity exceeded. Current load from other feeders: ${currentTotalLoad}MW, Capacity: ${substation.capacityMW}MW`);
       }
     }
 
@@ -131,7 +160,7 @@ export class FeederService {
       action: 'UPDATE',
       entity: 'Feeder',
       entityId: id,
-      changes: { old: feeder, new: updated },
+      changes: { feeder: { from: feeder, to: updated } },
     });
 
     return updated;
@@ -151,7 +180,7 @@ export class FeederService {
       action: 'UPDATE_STATUS',
       entity: 'Feeder',
       entityId: id,
-      changes: { old: { status: feeder.status }, new: { status } },
+      changes: { status: { from: feeder.status, to: status } },
     });
 
     return updated;

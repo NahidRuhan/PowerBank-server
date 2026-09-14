@@ -89,7 +89,7 @@ export class ScheduleService {
       action: 'CREATE',
       entity: 'ScheduledOutage',
       entityId: schedule.id,
-      changes: { new: schedule },
+      changes: { schedule: { from: null, to: schedule } },
     });
 
     // Notify customers about upcoming schedule
@@ -201,7 +201,7 @@ export class ScheduleService {
       action: 'UPDATE_STATUS',
       entity: 'ScheduledOutage',
       entityId: id,
-      changes: { old: { status: schedule.status }, new: { status } },
+      changes: { status: { from: schedule.status, to: status } },
     });
 
     if (status === 'ACTIVE') {
