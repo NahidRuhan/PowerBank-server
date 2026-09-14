@@ -22,6 +22,7 @@ async function main() {
       password: passwordHash,
       role: Role.ADMIN,
       isVerified: true,
+      meterNumber: 'SYS-ADMIN-METER',
     },
   });
 
@@ -32,6 +33,7 @@ async function main() {
       password: passwordHash,
       role: Role.OPERATOR,
       isVerified: true,
+      meterNumber: 'SYS-OP1-METER',
     },
   });
   const operator2 = await prisma.user.create({
@@ -41,6 +43,7 @@ async function main() {
       password: passwordHash,
       role: Role.OPERATOR,
       isVerified: true,
+      meterNumber: 'SYS-OP2-METER',
     },
   });
 

@@ -34,18 +34,9 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
             return done(null, user);
           }
 
-          user = await prisma.user.create({
-            data: {
-              email,
-              name: profile.displayName,
-              googleId: profile.id,
-              avatar: profile.photos?.[0]?.value,
-              isVerified: true,
-              role: Role.CUSTOMER,
-            },
-          });
-
-          done(null, user);
+          // We can no longer auto-create users via Google login because a meterNumber is mandatory.
+          // They must register normally first, then they can use Google to log in later.
+          return done(null, false, { message: 'User not found. Please register with your meter number first before using Google Login.' } as any);
         } catch (error) {
           done(error as Error);
         }

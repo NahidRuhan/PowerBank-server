@@ -6,7 +6,7 @@ model User {
   name        String
   avatar      String?
   role        Role      @default(CUSTOMER)
-  meterNumber String?   @unique
+  meterNumber String    @unique
   areaId      String?
   googleId    String?   @unique
   isVerified  Boolean   @default(false)

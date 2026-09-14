@@ -18,20 +18,18 @@ export class UserService {
   static async updateProfile(userId: string, data: any) {
     let areaId: string | undefined;
 
-    if (data.meterNumber) {
-      const meter = await prisma.meter.findUnique({
-        where: { number: data.meterNumber },
-      });
+    const meter = await prisma.meter.findUnique({
+      where: { number: data.meterNumber },
+    });
 
-      if (!meter) {
-        throw new ConflictError('Invalid meter number. Please contact the utility.');
-      }
-      if (meter.userId && meter.userId !== userId) {
-        throw new ConflictError('Meter number already registered to another user');
-      }
-
-      areaId = meter.areaId;
+    if (!meter) {
+      throw new ConflictError('Invalid meter number. Please contact the utility.');
     }
+    if (meter.userId && meter.userId !== userId) {
+      throw new ConflictError('Meter number already registered to another user');
+    }
+
+    areaId = meter.areaId;
 
     const oldUser = await prisma.user.findUnique({ where: { id: userId } });
 
@@ -43,21 +41,19 @@ export class UserService {
       },
     });
 
-    if (data.meterNumber) {
-      // Unlink old meter if any
-      if (oldUser?.meterNumber && oldUser.meterNumber !== data.meterNumber) {
-        await prisma.meter.updateMany({
-          where: { userId: userId, number: oldUser.meterNumber },
-          data: { userId: null },
-        });
-      }
-      
-      // Link new meter
-      await prisma.meter.update({
-        where: { number: data.meterNumber },
-        data: { userId: user.id },
+    // Unlink old meter if any
+    if (oldUser?.meterNumber && oldUser.meterNumber !== data.meterNumber) {
+      await prisma.meter.updateMany({
+        where: { userId: userId, number: oldUser.meterNumber },
+        data: { userId: null },
       });
     }
+    
+    // Link new meter
+    await prisma.meter.update({
+      where: { number: data.meterNumber },
+      data: { userId: user.id },
+    });
 
     await createAuditLog({
       userId,

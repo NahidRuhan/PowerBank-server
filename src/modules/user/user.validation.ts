@@ -4,7 +4,7 @@ export const updateProfileSchema = z.object({
   body: z.object({
     name: z.string().min(2).optional(),
     avatar: z.string().url().optional(),
-    meterNumber: z.string().optional(),
+    meterNumber: z.string().min(1, 'Meter number is required'),
     phoneNumber: z.string().optional(),
   }),
 });

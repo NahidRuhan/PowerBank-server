@@ -36,23 +36,31 @@ router.get(
   '/google',
   passport.authenticate('google', { scope: ['profile', 'email'], session: false }),
 );
-router.get(
-  '/google/callback',
-  passport.authenticate('google', { session: false, failureRedirect: '/login' }),
-  async (req, res, next) => {
+router.get('/google/callback', (req, res, next) => {
+  passport.authenticate('google', { session: false }, async (err: any, user: any, info: any) => {
     try {
-      if (!req.user) {
-        return res.status(401).json({ success: false, message: 'Authentication failed' });
+      if (err) {
+        return next(err);
       }
-      const tokens = await AuthService.generateTokens(req.user);
+      if (!user) {
+        // This catches the custom error we throw in passport.ts (e.g., "User not found. Please register...")
+        return res.status(401).json({
+          success: false,
+          message: info?.message || 'Authentication failed',
+        });
+      }
+
+      const tokens = await AuthService.generateTokens(user as import('@prisma/client').User);
       // In a real app you might redirect to frontend with tokens, but for API only we return JSON
-      return res
-        .status(200)
-        .json({ success: true, message: 'Google login successful', data: tokens });
+      return res.status(200).json({
+        success: true,
+        message: 'Google login successful',
+        data: tokens,
+      });
     } catch (e) {
       next(e);
     }
-  },
-);
+  })(req, res, next);
+});
 
 export default router;

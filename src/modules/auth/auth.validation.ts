@@ -5,7 +5,7 @@ export const registerSchema = z.object({
     email: z.string().email(),
     password: z.string().min(6),
     name: z.string().min(2),
-    meterNumber: z.string().optional(),
+    meterNumber: z.string().min(1, 'Meter number is required'),
     phoneNumber: z.string().optional(),
     avatar: z.string().url().optional(),
   }),

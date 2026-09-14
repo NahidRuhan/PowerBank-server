@@ -6,9 +6,11 @@ import { env } from '../../lib/env.js';
 import { ConflictError, UnauthorizedError, NotFoundError } from '../../lib/errors.js';
 import { createAuditLog } from '../../lib/auditLog.js';
 import { NotificationService } from '../../lib/notification.service.js';
+import { User } from '@prisma/client';
+import { RegisterData, LoginData, ResetPasswordData, TokenPayload } from './auth.interface.js';
 
 export class AuthService {
-  static async register(data: any) {
+  static async register(data: RegisterData) {
     const existingUser = await prisma.user.findUnique({
       where: { email: data.email },
     });
@@ -20,21 +22,19 @@ export class AuthService {
     let areaId: string | null = null;
     let meterId: string | null = null;
 
-    if (data.meterNumber) {
-      const meter = await prisma.meter.findUnique({
-        where: { number: data.meterNumber },
-      });
+    const meter = await prisma.meter.findUnique({
+      where: { number: data.meterNumber },
+    });
 
-      if (!meter) {
-        throw new NotFoundError('Invalid meter number. Please contact the utility.');
-      }
-      if (meter.userId) {
-        throw new ConflictError('Meter number already registered to another user');
-      }
-
-      areaId = meter.areaId;
-      meterId = meter.id;
+    if (!meter) {
+      throw new NotFoundError('Invalid meter number. Please contact the utility.');
     }
+    if (meter.userId) {
+      throw new ConflictError('Meter number already registered to another user');
+    }
+
+    areaId = meter.areaId;
+    meterId = meter.id;
 
     const hashedPassword = await bcrypt.hash(data.password, 10);
 
@@ -69,7 +69,7 @@ export class AuthService {
     return userWithoutPassword;
   }
 
-  static async login(data: any) {
+  static async login(data: LoginData) {
     const user = await prisma.user.findUnique({
       where: { email: data.email },
     });
@@ -88,7 +88,7 @@ export class AuthService {
 
   static async refreshToken(refreshToken: string) {
     try {
-      const decoded = jwt.verify(refreshToken, env.JWT_REFRESH_SECRET) as any;
+      const decoded = jwt.verify(refreshToken, env.JWT_REFRESH_SECRET) as TokenPayload;
 
       const storedToken = await redis.get(`session:${decoded.id}`);
       if (storedToken !== refreshToken) {
@@ -110,7 +110,7 @@ export class AuthService {
     await redis.del(`session:${userId}`);
   }
 
-  static async generateTokens(user: any) {
+  static async generateTokens(user: User) {
     const payload = { id: user.id, email: user.email, role: user.role };
 
     const accessToken = jwt.sign(payload, env.JWT_SECRET, { expiresIn: '15m' });
@@ -164,7 +164,7 @@ export class AuthService {
     return { message: 'If the email exists, an OTP has been sent' };
   }
 
-  static async resetPassword(data: any) {
+  static async resetPassword(data: ResetPasswordData) {
     const storedOtp = await redis.get(`otp:${data.email}`);
 
     if (!storedOtp || storedOtp !== data.otp) {
