@@ -14,6 +14,18 @@ export class PaymentService {
     if (bill.userId !== userId) throw new NotFoundError('Bill not found');
     if (bill.status === 'PAID') throw new ValidationError('Bill is already paid');
 
+    if (!env.STRIPE_SECRET_KEY) {
+      throw new Error('Stripe is not configured in this environment');
+    }
+
+    // Prevent duplicate PENDING payments for the same bill
+    const existingPending = await prisma.payment.findFirst({
+      where: { billId: bill.id, status: 'PENDING' },
+    });
+    if (existingPending) {
+      throw new ValidationError('A pending payment already exists for this bill. Please complete or cancel it first.');
+    }
+
     // Create a new PENDING payment
     const payment = await prisma.payment.create({
       data: {
@@ -23,10 +35,6 @@ export class PaymentService {
         currency: 'bdt',
       },
     });
-
-    if (!env.STRIPE_SECRET_KEY) {
-      throw new Error('Stripe is not configured in this environment');
-    }
 
     // Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({

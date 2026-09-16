@@ -27,6 +27,6 @@ router.post(
   authorize('ADMIN'),
   BillController.processOverdue,
 );
-router.get('/:id', BillController.getById);
+router.get('/:id', authorize('ADMIN', 'CUSTOMER'), BillController.getById);
 
 export default router;

@@ -3,7 +3,8 @@ import { NotFoundError, ValidationError } from '../../lib/errors.js';
 import { parsePagination } from '../../lib/pagination.js';
 import { prisma } from '../../lib/prisma.js';
 import { redis } from '../../lib/redis.js';
-
+import { Prisma, Role } from '@prisma/client';
+import { GetUsersQuery, GetAuditLogsQuery } from './admin.interface.js';
 export class AdminService {
   static async getDashboardStats() {
     const cacheKey = 'admin:dashboard:stats';
@@ -150,11 +151,11 @@ export class AdminService {
     return data;
   }
 
-  static async getUsers(query: any) {
+  static async getUsers(query: GetUsersQuery) {
     const { skip, take, page, limit } = parsePagination(query);
     const { search, role } = query;
 
-    const where: any = { deletedAt: null };
+    const where: Prisma.UserWhereInput = { deletedAt: null };
 
     if (role) {
       where.role = role;
@@ -207,7 +208,7 @@ export class AdminService {
 
     const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: { role: newRole as any },
+      data: { role: newRole as Role },
     });
 
     await createAuditLog({
@@ -242,11 +243,11 @@ export class AdminService {
     });
   }
 
-  static async getAuditLogs(query: any) {
+  static async getAuditLogs(query: GetAuditLogsQuery) {
     const { skip, take, page, limit } = parsePagination(query);
     const { entity, action, userId, from, to } = query;
 
-    const where: any = {};
+    const where: Prisma.AuditLogWhereInput = {};
     if (entity) where.entity = entity;
     if (action) where.action = action;
     if (userId) where.userId = userId;

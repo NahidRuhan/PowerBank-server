@@ -90,7 +90,7 @@ export class IncidentService {
         where,
         skip,
         take,
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
         include: {
           feeder: { select: { name: true, code: true } },
           creator: { select: { name: true } },
@@ -99,10 +99,6 @@ export class IncidentService {
       }),
       prisma.outageIncident.count({ where }),
     ]);
-
-    // Sort by priority CRITICAL -> HIGH -> MEDIUM -> LOW
-    const priorityWeight: Record<string, number> = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
-    incidents.sort((a, b) => priorityWeight[b.priority] - priorityWeight[a.priority]);
 
     return {
       incidents,

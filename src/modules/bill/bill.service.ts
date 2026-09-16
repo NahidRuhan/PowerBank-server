@@ -130,6 +130,8 @@ export class BillService {
     let processedCount = 0;
 
     for (const bill of overdueBills) {
+      // Surcharge is always calculated from base amount, not totalAmount.
+      // This ensures consistent behavior even if a bill was previously paid, refunded, and became overdue again.
       const surcharge = bill.amount * 0.05; // 5% surcharge
       const newTotal = bill.amount + surcharge;
 

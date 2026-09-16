@@ -23,7 +23,7 @@ export class AdminController {
 
   static async updateUserRole(req: Request, res: Response, next: NextFunction) {
     try {
-      const adminId = (req.user as any).id;
+      const adminId = (req.user as import('@prisma/client').User).id;
       const { id } = req.params;
       const { role } = req.body;
       const updatedUser = await AdminService.updateUserRole(adminId, id, role);
@@ -35,7 +35,7 @@ export class AdminController {
 
   static async deleteUser(req: Request, res: Response, next: NextFunction) {
     try {
-      const adminId = (req.user as any).id;
+      const adminId = (req.user as import('@prisma/client').User).id;
       const { id } = req.params;
       await AdminService.deleteUser(adminId, id);
       sendSuccess(res, null, 'User deleted successfully', 200);

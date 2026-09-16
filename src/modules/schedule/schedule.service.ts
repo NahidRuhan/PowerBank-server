@@ -13,6 +13,10 @@ export class ScheduleService {
       throw new ValidationError('Start time cannot be in the past');
     }
 
+    if (end <= start) {
+      throw new ValidationError('End time must be after start time');
+    }
+
     const feeder = await prisma.feeder.findUnique({
       where: { id: data.feederId },
       include: { areas: true },
@@ -191,8 +195,22 @@ export class ScheduleService {
       if (status === 'ACTIVE') {
         await tx.feeder.update({ where: { id: schedule.feederId }, data: { status: 'LOAD_SHED' } });
       } else if (status === 'COMPLETED') {
-        // Only revert to ENERGIZED if no other active schedules/incidents exist (simplified for now)
-        await tx.feeder.update({ where: { id: schedule.feederId }, data: { status: 'ENERGIZED' } });
+        // Only revert to ENERGIZED if no other active schedules/incidents exist
+        const activeEvents = await tx.feeder.findUnique({
+          where: { id: schedule.feederId },
+          include: {
+            incidents: { where: { status: { not: 'RESOLVED' }, deletedAt: null } },
+            schedules: { where: { status: 'ACTIVE', id: { not: id }, deletedAt: null } },
+          },
+        });
+
+        if (
+          activeEvents &&
+          activeEvents.incidents.length === 0 &&
+          activeEvents.schedules.length === 0
+        ) {
+          await tx.feeder.update({ where: { id: schedule.feederId }, data: { status: 'ENERGIZED' } });
+        }
       }
     });
 
@@ -227,6 +245,10 @@ export class ScheduleService {
 
     if (schedule.status === 'ACTIVE') {
       throw new ValidationError('Cannot delete an active schedule. Complete or cancel it first.');
+    }
+
+    if (schedule.status === 'COMPLETED') {
+      throw new ValidationError('Cannot delete a completed schedule. Completed schedules are preserved for fairness tracking.');
     }
 
     await prisma.scheduledOutage.update({

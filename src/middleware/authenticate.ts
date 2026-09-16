@@ -36,13 +36,14 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
         throw new UnauthorizedError('Session expired or logged out');
       }
 
-      // Optionally verify user still exists and isn't deleted
-      const user = await prisma.user.findUnique({ where: { id: decoded.id } });
+      // Verify user still exists and isn't deleted
+      const user = await prisma.user.findUnique({ where: { id: decoded.id, deletedAt: null } });
       if (!user) {
         throw new UnauthorizedError('User not found');
       }
 
-      req.user = decoded;
+      // Use fresh role from DB to prevent stale JWT role after admin role changes
+      req.user = { id: user.id, email: user.email, role: user.role };
       next();
     } catch (error) {
       console.error('Authentication Error:', error);
