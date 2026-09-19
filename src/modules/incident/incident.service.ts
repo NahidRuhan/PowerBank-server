@@ -6,15 +6,28 @@ import { NotificationService } from '../../lib/notification.service.js';
 
 export class IncidentService {
   static async create(data: any, userId: string) {
+    let targetFeederId = data.feederId;
+
+    if (!targetFeederId) {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: { area: true },
+      });
+      if (!user || !user.areaId) {
+        throw new ValidationError('You must provide a feederId or have an assigned area to report an incident');
+      }
+      targetFeederId = user.area!.feederId;
+    }
+
     const feeder = await prisma.feeder.findUnique({
-      where: { id: data.feederId },
+      where: { id: targetFeederId },
       include: { areas: true },
     });
 
     if (!feeder) throw new NotFoundError('Feeder not found');
 
     let incident = await prisma.outageIncident.findFirst({
-      where: { feederId: data.feederId, status: { not: 'RESOLVED' }, deletedAt: null }
+      where: { feederId: targetFeederId, status: { not: 'RESOLVED' }, deletedAt: null }
     });
 
     if (!incident) {
@@ -30,7 +43,7 @@ export class IncidentService {
       incident = await prisma.$transaction(async (tx) => {
         const inc = await tx.outageIncident.create({
           data: {
-            feederId: data.feederId,
+            feederId: targetFeederId,
             description: data.description,
             photoUrl: data.photoUrl,
             priority,
@@ -43,7 +56,7 @@ export class IncidentService {
 
         // Sync Feeder status
         await tx.feeder.update({
-          where: { id: data.feederId },
+          where: { id: targetFeederId },
           data: { status: 'FAULT' },
         });
 
@@ -59,7 +72,7 @@ export class IncidentService {
       });
 
       NotificationService.notifyAffectedCustomers(
-        data.feederId,
+        targetFeederId,
         'Unexpected Power Outage',
         `An unexpected power outage has been reported in your area. Description: ${data.description}. Our team is investigating.`,
       );

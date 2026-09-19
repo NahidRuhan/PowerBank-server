@@ -1440,7 +1440,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"status\": \"REPAIRING\",\n  \"estimatedRestoration\": \"2026-09-04T12:00:00.000Z\"\n}"
+              "raw": "{\n  \"status\": \"IN_PROGRESS\",\n  \"estimatedRestoration\": \"2026-09-04T12:00:00.000Z\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/incidents/REPLACE_WITH_INCIDENT_ID",

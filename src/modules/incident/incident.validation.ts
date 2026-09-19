@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const createIncidentSchema = z.object({
   body: z.object({
-    feederId: z.string().cuid(),
+    feederId: z.string().cuid().optional(),
     description: z.string().min(10),
     estimatedRestoration: z.string().datetime().optional(), // Can be set later
   }),

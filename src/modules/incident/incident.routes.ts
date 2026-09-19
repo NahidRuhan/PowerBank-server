@@ -14,10 +14,10 @@ const router = Router();
 
 router.use(authenticate);
 
-// Customers can view incidents, but only OPERATOR/ADMIN can report and update them
+// Customers can report incidents and view them. OPERATOR/ADMIN can update them.
 router.post(
   '/',
-  authorize('ADMIN', 'OPERATOR'),
+  authorize('ADMIN', 'OPERATOR', 'CUSTOMER'),
   upload.single('photo'),
   validate(createIncidentSchema),
   IncidentController.create,
