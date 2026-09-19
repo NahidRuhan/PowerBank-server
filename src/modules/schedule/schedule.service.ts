@@ -45,7 +45,30 @@ export class ScheduleService {
       throw new ConflictError('This feeder already has an overlapping schedule');
     }
 
-    // 3. Create schedule
+    // 3. Quota validation check (block if exceeded)
+    let warning = null;
+    if (data.quotaId) {
+      const quota = await prisma.sheddingQuota.findUnique({
+        where: { id: data.quotaId },
+        include: { schedules: { include: { feeder: true } } },
+      });
+      if (quota) {
+        const existingScheduledMW = quota.schedules.reduce((sum, s) => {
+          if (s.status !== 'CANCELLED') {
+            return sum + s.feeder.loadMW;
+          }
+          return sum;
+        }, 0);
+        
+        const totalScheduledMW = existingScheduledMW + feeder.loadMW;
+        
+        if (totalScheduledMW > quota.targetMW) {
+          throw new ValidationError(`Quota target exceeded. Total scheduled: ${totalScheduledMW} MW, Target: ${quota.targetMW} MW`);
+        }
+      }
+    }
+
+    // 4. Create schedule
     const schedule = await prisma.scheduledOutage.create({
       data: {
         feederId: data.feederId,
@@ -56,26 +79,6 @@ export class ScheduleService {
         createdBy: userId,
       },
     });
-
-    // 4. Quota validation warning check
-    let warning = null;
-    if (data.quotaId) {
-      const quota = await prisma.sheddingQuota.findUnique({
-        where: { id: data.quotaId },
-        include: { schedules: { include: { feeder: true } } },
-      });
-      if (quota) {
-        const totalScheduledMW = quota.schedules.reduce((sum, s) => {
-          if (s.status !== 'CANCELLED') {
-            return sum + s.feeder.loadMW;
-          }
-          return sum;
-        }, 0);
-        if (totalScheduledMW > quota.targetMW * 1.1) {
-          warning = `Quota target exceeded. Total scheduled: ${totalScheduledMW} MW, Target: ${quota.targetMW} MW`;
-        }
-      }
-    }
 
     // 5. Fairness validation warning check
     const fairnessStats = await ScheduleService.getFairnessStats();

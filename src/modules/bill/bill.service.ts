@@ -123,7 +123,6 @@ export class BillService {
       where: {
         status: 'UNPAID',
         dueDate: { lt: now },
-        deletedAt: null,
       },
     });
 

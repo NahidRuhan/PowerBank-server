@@ -1,10 +1,19 @@
-import { Role } from '@prisma/client';
+import { Role, FeederStatus, Priority } from '@prisma/client';
 import bcrypt from 'bcryptjs';
-import { prisma } from '../src/lib/prisma';
+import { prisma } from '../src/lib/prisma.js';
+
+// Helpers for randomization
+const capacities = [50, 100, 150, 200, 250, 300];
+const getLoad = () => [5, 10, 15, 20, 25, 30, 35, 40][Math.floor(Math.random() * 8)];
+
+const statuses = ['ENERGIZED', 'LOAD_SHED', 'FAULT', 'MAINTENANCE'] as FeederStatus[];
+const getStatus = () => statuses[Math.floor(Math.random() * statuses.length)];
+
+const priorities = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as Priority[];
+const getPriority = () => priorities[Math.floor(Math.random() * priorities.length)];
 
 async function main() {
   console.log('🧹 Wiping existing database...');
-  // Hard delete all tables to avoid soft-delete unique constraint issues
   await prisma.$executeRawUnsafe(
     `TRUNCATE TABLE "Meter", "Payment", "Bill", "OutageReport", "OutageIncident", "ScheduledOutage", "SheddingQuota", "Area", "Feeder", "Substation", "DistributionZone", "AuditLog", "User" CASCADE;`,
   );
@@ -13,8 +22,79 @@ async function main() {
 
   const passwordHash = await bcrypt.hash('password123', 10);
 
-  // --- 1. Users ---
-  console.log('Creating users...');
+  // --- 1. Distribution Zones ---
+  console.log('Creating 10 Distribution Zones...');
+  const zones = [];
+  for (let i = 1; i <= 10; i++) {
+    const zone = await prisma.distributionZone.create({
+      data: { name: `Zone ${i}`, code: `ZN-${i}` },
+    });
+    zones.push(zone);
+  }
+
+  // --- 2. Substations & Feeders (Physics-Aware) ---
+  console.log('Creating 50 Substations and 250 Feeders...');
+  const substations = [];
+  const feeders = [];
+  let feederCounter = 1;
+
+  for (let i = 1; i <= 50; i++) {
+    // Generate 5 feeders first to calculate total load
+    const feederLoads = [getLoad(), getLoad(), getLoad(), getLoad(), getLoad()];
+    const totalFeederLoad = feederLoads.reduce((a, b) => a + b, 0);
+
+    // Pick a substation capacity that is AT LEAST the total feeder load
+    const validCapacities = capacities.filter((c) => c >= totalFeederLoad);
+    // Randomly pick from valid capacities, or fallback to the max (300)
+    const capacityMW =
+      validCapacities.length > 0
+        ? validCapacities[Math.floor(Math.random() * validCapacities.length)]
+        : 300;
+
+    const sub = await prisma.substation.create({
+      data: {
+        name: `Substation ${i}`,
+        code: `SUB-${i}`,
+        capacityMW: capacityMW,
+        zoneId: zones[(i - 1) % 10].id,
+      },
+    });
+    substations.push(sub);
+
+    // Now insert the 5 feeders into the database
+    for (let j = 0; j < 5; j++) {
+      const feeder = await prisma.feeder.create({
+        data: {
+          name: `Feeder ${feederCounter}`,
+          code: `FDR-${feederCounter}`,
+          loadMW: feederLoads[j],
+          status: getStatus(),
+          substationId: sub.id,
+        },
+      });
+      feeders.push(feeder);
+      feederCounter++;
+    }
+  }
+
+  // --- 3. Areas ---
+  console.log('Creating 600 Areas...');
+  const areas = [];
+  for (let i = 1; i <= 600; i++) {
+    const area = await prisma.area.create({
+      data: {
+        name: `Area ${i}`,
+        code: `ARA-${i}`,
+        priority: getPriority(),
+        feederId: feeders[(i - 1) % 250].id,
+      },
+    });
+    areas.push(area);
+  }
+
+  // --- 4. Users & Meters ---
+  console.log('Creating Staff Users & their Meters...');
+  
   const admin = await prisma.user.create({
     data: {
       email: 'admin@powerbank.com',
@@ -23,10 +103,12 @@ async function main() {
       role: Role.ADMIN,
       isVerified: true,
       meterNumber: 'SYS-ADMIN-METER',
+      areaId: areas[0].id, // Staff assigned to area 0
     },
   });
+  await prisma.meter.create({ data: { number: admin.meterNumber, areaId: admin.areaId!, userId: admin.id } });
 
-  const operator1 = await prisma.user.create({
+  const op1 = await prisma.user.create({
     data: {
       email: 'operator1@powerbank.com',
       name: 'Grid Operator Alpha',
@@ -34,9 +116,12 @@ async function main() {
       role: Role.OPERATOR,
       isVerified: true,
       meterNumber: 'SYS-OP1-METER',
+      areaId: areas[0].id,
     },
   });
-  const operator2 = await prisma.user.create({
+  await prisma.meter.create({ data: { number: op1.meterNumber, areaId: op1.areaId!, userId: op1.id } });
+
+  const op2 = await prisma.user.create({
     data: {
       email: 'operator2@powerbank.com',
       name: 'Grid Operator Beta',
@@ -44,369 +129,44 @@ async function main() {
       role: Role.OPERATOR,
       isVerified: true,
       meterNumber: 'SYS-OP2-METER',
+      areaId: areas[0].id,
     },
   });
+  await prisma.meter.create({ data: { number: op2.meterNumber, areaId: op2.areaId!, userId: op2.id } });
 
-  // --- 2. Infrastructure ---
-  console.log('Creating infrastructure (Zones, Substations, Feeders, Areas)...');
 
-  // Zone 1
-  const zoneNorth = await prisma.distributionZone.create({
-    data: { name: 'Dhaka North', code: 'DHK-NORTH', description: 'Northern part of Dhaka city' },
-  });
+  console.log('Creating 150 Customer Users & their Meters...');
+  for (let i = 1; i <= 150; i++) {
+    const area = areas[(i - 1) % 600];
+    const mtrNum = `MTR-CUST-${i}`;
 
-  // Zone 2
-  const zoneSouth = await prisma.distributionZone.create({
-    data: { name: 'Dhaka South', code: 'DHK-SOUTH', description: 'Southern part of Dhaka city' },
-  });
+    const user = await prisma.user.create({
+      data: {
+        email: `customer${i}@powerbank.com`,
+        name: `Customer ${i}`,
+        password: passwordHash,
+        role: Role.CUSTOMER,
+        isVerified: true,
+        meterNumber: mtrNum,
+        areaId: area.id,
+      },
+    });
 
-  // Substations
-  const subMirpur = await prisma.substation.create({
-    data: { name: 'Mirpur 10 Substation', code: 'MIR-10', capacityMW: 200, zoneId: zoneNorth.id },
-  });
-  const subUttara = await prisma.substation.create({
-    data: { name: 'Uttara Grid Substation', code: 'UTT-01', capacityMW: 150, zoneId: zoneNorth.id },
-  });
-  const subMotijheel = await prisma.substation.create({
-    data: {
-      name: 'Motijheel Commercial Substation',
-      code: 'MOT-01',
-      capacityMW: 300,
-      zoneId: zoneSouth.id,
-    },
-  });
+    await prisma.meter.create({
+      data: {
+        number: mtrNum,
+        areaId: area.id,
+        userId: user.id,
+      }
+    });
+  }
 
-  // Feeders
-  const feederMirpur1 = await prisma.feeder.create({
-    data: {
-      name: 'Mirpur F1 (Residential)',
-      code: 'MIR-10-F1',
-      loadMW: 25,
-      substationId: subMirpur.id,
-      status: 'ENERGIZED',
-    },
-  });
-  const feederMirpur2 = await prisma.feeder.create({
-    data: {
-      name: 'Mirpur F2 (Commercial)',
-      code: 'MIR-10-F2',
-      loadMW: 40,
-      substationId: subMirpur.id,
-      status: 'ENERGIZED',
-    },
-  });
-  const feederUttara1 = await prisma.feeder.create({
-    data: {
-      name: 'Uttara F1',
-      code: 'UTT-01-F1',
-      loadMW: 30,
-      substationId: subUttara.id,
-      status: 'ENERGIZED',
-    },
-  });
-  const feederMotijheel1 = await prisma.feeder.create({
-    data: {
-      name: 'Motijheel Central',
-      code: 'MOT-01-F1',
-      loadMW: 80,
-      substationId: subMotijheel.id,
-      status: 'ENERGIZED',
-    },
-  });
-
-  // Areas
-  const areaPallabi = await prisma.area.create({
-    data: {
-      name: 'Pallabi Phase 1',
-      code: 'PALLABI-1',
-      priority: 'MEDIUM',
-      customerCount: 2000,
-      feederId: feederMirpur1.id,
-    },
-  });
-  const areaMirpur10 = await prisma.area.create({
-    data: {
-      name: 'Mirpur 10 Circle',
-      code: 'MIR-10-C',
-      priority: 'HIGH',
-      customerCount: 1500,
-      feederId: feederMirpur2.id,
-    },
-  });
-  const areaUttaraSec4 = await prisma.area.create({
-    data: {
-      name: 'Uttara Sector 4',
-      code: 'UTT-S4',
-      priority: 'MEDIUM',
-      customerCount: 3000,
-      feederId: feederUttara1.id,
-    },
-  });
-  const areaDilkusha = await prisma.area.create({
-    data: {
-      name: 'Dilkusha C/A',
-      code: 'DILKUSHA',
-      priority: 'CRITICAL',
-      customerCount: 500,
-      feederId: feederMotijheel1.id,
-    },
-  });
-
-  // --- 2.5 Meters ---
-  console.log('Creating meters...');
-  const meter1 = await prisma.meter.create({
-    data: { number: 'MTR-001', areaId: areaPallabi.id },
-  });
-  const meter2 = await prisma.meter.create({
-    data: { number: 'MTR-002', areaId: areaMirpur10.id },
-  });
-  const meter3 = await prisma.meter.create({
-    data: { number: 'MTR-003', areaId: areaUttaraSec4.id },
-  });
-  const meter4 = await prisma.meter.create({
-    data: { number: 'MTR-004', areaId: areaDilkusha.id },
-  });
-
-  // --- 3. Customers ---
-  console.log('Creating customers...');
-  const customer1 = await prisma.user.create({
-    data: {
-      email: 'customer1@powerbank.com',
-      name: 'Test Customer 1',
-      password: passwordHash,
-      role: Role.CUSTOMER,
-      meterNumber: 'MTR-001',
-      areaId: areaPallabi.id,
-      isVerified: true,
-    },
-  });
-  const customer2 = await prisma.user.create({
-    data: {
-      email: 'customer2@powerbank.com',
-      name: 'Test Customer 2',
-      password: passwordHash,
-      role: Role.CUSTOMER,
-      meterNumber: 'MTR-002',
-      areaId: areaMirpur10.id,
-      isVerified: true,
-    },
-  });
-  const customer3 = await prisma.user.create({
-    data: {
-      email: 'customer3@powerbank.com',
-      name: 'Test Customer 3',
-      password: passwordHash,
-      role: Role.CUSTOMER,
-      meterNumber: 'MTR-003',
-      areaId: areaUttaraSec4.id,
-      isVerified: true,
-    },
-  });
-  const customer4 = await prisma.user.create({
-    data: {
-      email: 'customer4@powerbank.com',
-      name: 'Test Customer 4',
-      password: passwordHash,
-      role: Role.CUSTOMER,
-      meterNumber: 'MTR-004',
-      areaId: areaDilkusha.id,
-      isVerified: true,
-    },
-  });
-
-  // Link meters to users
-  await prisma.meter.update({ where: { id: meter1.id }, data: { userId: customer1.id } });
-  await prisma.meter.update({ where: { id: meter2.id }, data: { userId: customer2.id } });
-  await prisma.meter.update({ where: { id: meter3.id }, data: { userId: customer3.id } });
-  await prisma.meter.update({ where: { id: meter4.id }, data: { userId: customer4.id } });
-
-  // --- 4. Quotas & Schedules ---
-  console.log('Creating quotas and schedules...');
-  const now = new Date();
-
-  const quota = await prisma.sheddingQuota.create({
-    data: {
-      date: new Date(),
-      timeSlot: '18:00-20:00',
-      targetMW: 150,
-      createdBy: operator1.id,
-    },
-  });
-
-  // Scheduled outage for Uttara
-  await prisma.scheduledOutage.create({
-    data: {
-      feederId: feederUttara1.id,
-      quotaId: quota.id,
-      startTime: new Date(now.getTime() - 30 * 60 * 1000), // Started 30 mins ago
-      endTime: new Date(now.getTime() + 90 * 60 * 1000), // Ends in 90 mins
-      reason: 'National Grid short supply',
-      status: 'ACTIVE',
-      createdBy: operator1.id,
-    },
-  });
-
-  // Future scheduled outage for Mirpur 1
-  await prisma.scheduledOutage.create({
-    data: {
-      feederId: feederMirpur1.id,
-      quotaId: quota.id,
-      startTime: new Date(now.getTime() + 120 * 60 * 1000), // Starts in 2 hours
-      endTime: new Date(now.getTime() + 180 * 60 * 1000), // Ends in 3 hours
-      reason: 'Evening peak load balancing',
-      status: 'SCHEDULED',
-      createdBy: operator2.id,
-    },
-  });
-
-  // Update Uttara feeder to LOAD_SHED since the schedule is active
-  await prisma.feeder.update({
-    where: { id: feederUttara1.id },
-    data: { status: 'LOAD_SHED' },
-  });
-
-  // --- 5. Incidents & Reports ---
-  console.log('Creating incidents and outage reports...');
-
-  // Investigating incident
-  const incident1 = await prisma.outageIncident.create({
-    data: {
-      feederId: feederMirpur1.id,
-      description: 'Underground cable fault reported near Circle',
-      status: 'REPORTED',
-      priority: 'MEDIUM',
-      createdBy: customer1.id,
-    },
-  });
-
-  await prisma.outageReport.create({
-    data: {
-      incidentId: incident1.id,
-      userId: customer1.id,
-      description: 'Power has been out for 20 mins!',
-    }
-  });
-
-  // Repairing incident
-  const incident2 = await prisma.outageIncident.create({
-    data: {
-      feederId: feederMotijheel1.id,
-      description: 'Transformer blown, replacement in transit',
-      status: 'IN_PROGRESS',
-      priority: 'CRITICAL',
-      estimatedRestoration: new Date(now.getTime() + 4 * 60 * 60 * 1000), // +4 hours
-      createdBy: customer4.id,
-      assignedToId: operator2.id,
-    },
-  });
-
-  await prisma.outageReport.create({
-    data: {
-      incidentId: incident2.id,
-      userId: customer4.id,
-      description: 'Massive spark and then everything went dark.',
-    }
-  });
-
-  // Update feeder status to FAULT
-  await prisma.feeder.updateMany({
-    where: { id: { in: [feederMirpur1.id, feederMotijheel1.id] } },
-    data: { status: 'FAULT' },
-  });
-
-  // --- 5.5 Audit Logs ---
-  console.log('Creating audit logs...');
-  await prisma.auditLog.create({
-    data: {
-      userId: admin.id,
-      action: 'SYSTEM_INIT',
-      entity: 'System',
-      entityId: 'global',
-      changes: { note: 'Database initialized with seed data' },
-    }
-  });
-  await prisma.auditLog.create({
-    data: {
-      userId: operator1.id,
-      action: 'CREATE',
-      entity: 'SheddingQuota',
-      entityId: quota.id,
-      changes: { new: quota },
-    }
-  });
-
-  // --- 6. Bills & Payments ---
-  console.log('Creating bills and payments...');
-
-  // Unpaid bill
-  const bill1 = await prisma.bill.create({
-    data: {
-      userId: customer1.id,
-      areaId: areaPallabi.id,
-      month: '2026-08',
-      amount: 1200,
-      totalAmount: 1200,
-      dueDate: new Date(now.getFullYear(), now.getMonth(), 15),
-      status: 'UNPAID',
-    },
-  });
-
-  // Paid bill with a succeeded payment
-  const bill2 = await prisma.bill.create({
-    data: {
-      userId: customer2.id,
-      areaId: areaMirpur10.id,
-      month: '2026-08',
-      amount: 4500,
-      totalAmount: 4500,
-      dueDate: new Date(now.getFullYear(), now.getMonth(), 15),
-      status: 'PAID',
-    },
-  });
-
-  await prisma.payment.create({
-    data: {
-      billId: bill2.id,
-      userId: customer2.id,
-      amount: 4500,
-      currency: 'BDT',
-      status: 'SUCCEEDED',
-      stripeSessionId: 'cs_test_mock12345',
-      stripePaymentId: 'pi_test_mock12345',
-    },
-  });
-
-  // Overdue bill with a failed payment attempt
-  const bill3 = await prisma.bill.create({
-    data: {
-      userId: customer3.id,
-      areaId: areaUttaraSec4.id,
-      month: '2026-07',
-      amount: 2500,
-      surcharge: 100,
-      totalAmount: 2600,
-      dueDate: new Date(now.getFullYear(), now.getMonth() - 1, 15),
-      status: 'OVERDUE',
-    },
-  });
-
-  await prisma.payment.create({
-    data: {
-      billId: bill3.id,
-      userId: customer3.id,
-      amount: 2500, // Failed before surcharge was added
-      currency: 'BDT',
-      status: 'FAILED',
-      stripeSessionId: 'cs_test_mockfailed',
-    },
-  });
-
-  console.log('✅ Seeding completed perfectly!');
+  console.log('✅ Seeding complete!');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Seeding failed:', e);
+    console.error(e);
     process.exit(1);
   })
   .finally(async () => {

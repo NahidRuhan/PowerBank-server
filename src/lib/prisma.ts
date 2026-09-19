@@ -57,8 +57,8 @@ export const prisma = basePrisma.$extends({
       async delete({ model, args, query }) {
         if (softDeleteModels.includes(model)) {
           return (basePrisma as any)[model].update({
-            ...args,
-            data: { ...args.data, deletedAt: new Date() },
+            where: args.where,
+            data: { deletedAt: new Date() },
           });
         }
         return query(args);
@@ -66,8 +66,8 @@ export const prisma = basePrisma.$extends({
       async deleteMany({ model, args, query }) {
         if (softDeleteModels.includes(model)) {
           return (basePrisma as any)[model].updateMany({
-            ...args,
-            data: { ...args.data, deletedAt: new Date() },
+            where: args.where,
+            data: { deletedAt: new Date() },
           });
         }
         return query(args);
