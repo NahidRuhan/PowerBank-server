@@ -29,7 +29,10 @@ export class MeterController {
   static async deleteMeter(req: Request, res: Response, next: NextFunction) {
     try {
       await MeterService.deleteMeter(req.params.id);
-      res.status(204).send();
+      res.status(200).json({
+        success: true,
+        message: 'Meter deleted successfully'
+      });
     } catch (error) {
       next(error);
     }
