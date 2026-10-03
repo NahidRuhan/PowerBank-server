@@ -54,7 +54,7 @@ router.get('/google/callback', (req, res, next) => {
       const tokens = await AuthService.generateTokens(user as import('@prisma/client').User);
       
       const userStr = encodeURIComponent(JSON.stringify(user));
-      const redirectUrl = `${env.CLIENT_URL}/callback?token=${tokens.accessToken}&user=${userStr}`;
+      const redirectUrl = `${env.CLIENT_URL}/callback?token=${tokens.accessToken}&refreshToken=${tokens.refreshToken}&user=${userStr}`;
       
       return res.redirect(redirectUrl);
     } catch (e) {
