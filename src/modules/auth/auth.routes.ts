@@ -45,10 +45,8 @@ router.get('/google/callback', (req, res, next) => {
       }
       if (!user) {
         // This catches the custom error we throw in passport.ts (e.g., "User not found. Please register...")
-        return res.status(401).json({
-          success: false,
-          message: info?.message || 'Authentication failed',
-        });
+        const errorMessage = encodeURIComponent(info?.message || 'Authentication failed');
+        return res.redirect(`${env.CLIENT_URL}/login?error=${errorMessage}`);
       }
 
       const tokens = await AuthService.generateTokens(user as import('@prisma/client').User);
