@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import passport from 'passport';
+import { env } from '../../lib/env.js';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
 import { validate } from '../../middleware/validate.js';
@@ -51,12 +52,11 @@ router.get('/google/callback', (req, res, next) => {
       }
 
       const tokens = await AuthService.generateTokens(user as import('@prisma/client').User);
-      // In a real app you might redirect to frontend with tokens, but for API only we return JSON
-      return res.status(200).json({
-        success: true,
-        message: 'Google login successful',
-        data: tokens,
-      });
+      
+      const userStr = encodeURIComponent(JSON.stringify(user));
+      const redirectUrl = `${env.CLIENT_URL}/callback?token=${tokens.accessToken}&user=${userStr}`;
+      
+      return res.redirect(redirectUrl);
     } catch (e) {
       next(e);
     }
