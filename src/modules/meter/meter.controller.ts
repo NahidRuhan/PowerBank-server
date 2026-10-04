@@ -16,10 +16,10 @@ export class MeterController {
 
   static async getAllMeters(req: Request, res: Response, next: NextFunction) {
     try {
-      const meters = await MeterService.getAllMeters();
+      const result = await MeterService.getAllMeters(req.query);
       res.status(200).json({
         success: true,
-        data: meters,
+        data: result,
       });
     } catch (error) {
       next(error);

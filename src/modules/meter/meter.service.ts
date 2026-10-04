@@ -1,5 +1,6 @@
 import { prisma } from '../../lib/prisma.js';
 import { ConflictError, NotFoundError } from '../../lib/errors.js';
+import { parsePagination } from '../../lib/pagination.js';
 
 export class MeterService {
   static async createMeter(data: { number: string; areaId: string }) {
@@ -27,19 +28,47 @@ export class MeterService {
     });
   }
 
-  static async getAllMeters() {
-    return await prisma.meter.findMany({
-      include: {
-        area: true,
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+  static async getAllMeters(query: any = {}) {
+    const { skip, take, page, limit } = parsePagination(query);
+    const where: any = {};
+
+    if (query.areaId) {
+      where.areaId = query.areaId;
+    }
+
+    if (query.search) {
+      where.number = { contains: query.search, mode: 'insensitive' };
+    }
+
+    const [meters, total] = await Promise.all([
+      prisma.meter.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          area: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
           },
         },
+      }),
+      prisma.meter.count({ where }),
+    ]);
+
+    return {
+      meters,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
-    });
+    };
   }
 
   static async deleteMeter(id: string) {
