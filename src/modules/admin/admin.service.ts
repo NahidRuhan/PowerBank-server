@@ -14,6 +14,14 @@ export class AdminService {
     const now = new Date();
     const todayStart = new Date(now.setHours(0, 0, 0, 0));
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    // For weekly outage trend
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1)); // Monday
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    // For yearly revenue trend
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
 
     const [
       totalUsers,
@@ -28,6 +36,8 @@ export class AdminService {
       billsPaid,
       billsOverdue,
       incidentFeederGroups,
+      incidentsThisWeek,
+      paidBillsThisYear,
     ] = await Promise.all([
       prisma.user.count({ where: { deletedAt: null } }),
       prisma.user.groupBy({
@@ -65,6 +75,14 @@ export class AdminService {
         orderBy: { _count: { id: 'desc' } },
         take: 5,
       }),
+      prisma.outageIncident.findMany({
+        where: { createdAt: { gte: startOfWeek } },
+        select: { createdAt: true, resolvedAt: true, status: true }
+      }),
+      prisma.bill.findMany({
+        where: { status: 'PAID', updatedAt: { gte: startOfYear } },
+        select: { totalAmount: true, updatedAt: true }
+      })
     ]);
 
     // Format roles
@@ -82,41 +100,86 @@ export class AdminService {
       include: { areas: true },
     });
 
-    const topAffectedAreas = incidentFeederGroups.map((group) => {
+    const topAffectedAreasPromises = incidentFeederGroups.map(async (group) => {
       const feeder = topFeeders.find((f) => f.id === group.feederId);
+      
+      const incidents = await prisma.outageIncident.findMany({
+        where: { feederId: group.feederId, status: 'RESOLVED', resolvedAt: { not: null } },
+        select: { createdAt: true, resolvedAt: true }
+      });
+      
+      let avgERT = 'N/A';
+      if (incidents.length > 0) {
+        const totalMs = incidents.reduce((acc, inc) => acc + (inc.resolvedAt!.getTime() - inc.createdAt.getTime()), 0);
+        const avgMs = totalMs / incidents.length;
+        const hours = Math.floor(avgMs / (1000 * 60 * 60));
+        const mins = Math.floor((avgMs % (1000 * 60 * 60)) / (1000 * 60));
+        avgERT = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+      }
+
       return {
-        feederCode: feeder?.code,
-        incidentCount: group._count.id,
-        areas: feeder?.areas.map((a) => a.name) || [],
+        id: feeder?.id || group.feederId,
+        name: feeder?.areas.map(a => a.name).join(', ') || feeder?.code || 'Unknown',
+        incidents: group._count.id,
+        avgERT,
       };
     });
+    
+    const topAffectedAreas = await Promise.all(topAffectedAreasPromises);
 
-    // Determine fairness (most/least shed feeders based on hours)
+    // Determine fairness
     const { ScheduleService } = await import('../schedule/schedule.service.js');
     const fairnessStats = await ScheduleService.getFairnessStats();
     
     let mostShedFeeder = null;
     let leastShedFeeder = null;
+    let fairnessTrend: { name: string; hours: number }[] = [];
 
     if (fairnessStats.feeders.length > 0) {
-      const most = fairnessStats.feeders[0];
-      const least = fairnessStats.feeders[fairnessStats.feeders.length - 1];
-      
-      const feederCodes = await prisma.feeder.findMany({
-        where: { id: { in: [most.feederId, least.feederId] } },
+      const allFeederCodes = await prisma.feeder.findMany({
+        where: { id: { in: fairnessStats.feeders.map(f => f.feederId) } },
         select: { id: true, code: true }
       });
 
+      fairnessTrend = fairnessStats.feeders.slice(0, 7).map(f => ({
+        name: allFeederCodes.find(fc => fc.id === f.feederId)?.code || f.feederName,
+        hours: Number(f.totalHours.toFixed(1))
+      }));
+
+      const most = fairnessStats.feeders[0];
+      const least = fairnessStats.feeders[fairnessStats.feeders.length - 1];
+      
       mostShedFeeder = {
-        code: feederCodes.find(f => f.id === most.feederId)?.code || most.feederName,
+        code: allFeederCodes.find(f => f.id === most.feederId)?.code || most.feederName,
         hoursThisMonth: most.totalHours,
       };
 
       leastShedFeeder = {
-        code: feederCodes.find(f => f.id === least.feederId)?.code || least.feederName,
+        code: allFeederCodes.find(f => f.id === least.feederId)?.code || least.feederName,
         hoursThisMonth: least.totalHours,
       };
     }
+
+    // Outage Trend (Weekly)
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const outageTrend = days.map(day => ({ name: day, reported: 0, resolved: 0 }));
+
+    incidentsThisWeek.forEach(inc => {
+      const dayIndex = (inc.createdAt.getDay() + 6) % 7;
+      outageTrend[dayIndex].reported++;
+      if (inc.status === 'RESOLVED' && inc.resolvedAt && inc.resolvedAt >= startOfWeek) {
+        const resDayIndex = (inc.resolvedAt.getDay() + 6) % 7;
+        outageTrend[resDayIndex].resolved++;
+      }
+    });
+
+    // Revenue Trend (Yearly)
+    const revenueByMonth = Array(12).fill(0);
+    paidBillsThisYear.forEach(bill => {
+      revenueByMonth[bill.updatedAt.getMonth()] += Number(bill.totalAmount);
+    });
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const revenueTrend = revenueByMonth.map((rev, i) => ({ name: monthNames[i], revenue: rev })).slice(0, now.getMonth() + 1);
 
     const data = {
       users: {
@@ -134,7 +197,7 @@ export class AdminService {
         completedThisMonth: completedSchedules,
       },
       billing: {
-        revenueThisMonth: revenueQuery._sum.totalAmount || 0,
+        revenueThisMonth: Number(revenueQuery._sum.totalAmount || 0),
         paid: billsPaid,
         overdue: billsOverdue,
       },
@@ -144,6 +207,9 @@ export class AdminService {
         averageHoursPerFeeder: fairnessStats.averageSystemHours,
       },
       topAffectedAreas,
+      outageTrend,
+      revenueTrend,
+      fairnessTrend,
     };
 
     // Cache for 5 mins
