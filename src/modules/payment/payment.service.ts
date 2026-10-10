@@ -18,12 +18,25 @@ export class PaymentService {
       throw new Error('Stripe is not configured in this environment');
     }
 
-    // Prevent duplicate PENDING payments for the same bill
     const existingPending = await prisma.payment.findFirst({
       where: { billId: bill.id, status: 'PENDING' },
     });
-    if (existingPending) {
-      throw new ValidationError('A pending payment already exists for this bill. Please complete or cancel it first.');
+    
+    if (existingPending && existingPending.stripeSessionId) {
+      const existingSession = await stripe.checkout.sessions.retrieve(existingPending.stripeSessionId);
+      if (existingSession.status === 'open' && existingSession.url) {
+        return { checkoutUrl: existingSession.url };
+      } else {
+        // If expired or complete, mark it as FAILED (webhook will handle complete, but just in case)
+        if (existingSession.status !== 'complete') {
+          await prisma.payment.update({
+            where: { id: existingPending.id },
+            data: { status: 'FAILED' },
+          });
+        } else {
+          throw new ValidationError('Payment has already been completed. Please refresh.');
+        }
+      }
     }
 
     // Create a new PENDING payment

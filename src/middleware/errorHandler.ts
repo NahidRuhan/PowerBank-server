@@ -3,11 +3,12 @@ import { AppError } from '../lib/errors.js';
 import { sendError } from '../lib/response.js';
 
 export const errorHandler = (err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error(err);
-
   if (err instanceof AppError) {
+    console.error(`[API Error] ${err.statusCode} - ${err.message}`);
     return sendError(res, err.message, err.errors, err.statusCode);
   }
+
+  console.error('[Unhandled Error]', err);
 
   // Prisma unique constraint violation
   if ((err as any).code === 'P2002') {
