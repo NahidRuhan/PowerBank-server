@@ -91,12 +91,16 @@ export class IncidentService {
     return incident;
   }
 
-  static async getAll(query: any) {
+  static async getAll(query: any, user: { id: string; role: string }) {
     const { skip, take, page, limit } = parsePagination(query);
     const where: any = { deletedAt: null };
 
     if (query.feederId) where.feederId = query.feederId;
     if (query.status) where.status = query.status;
+
+    if (user.role === 'CUSTOMER') {
+      where.createdBy = user.id;
+    }
 
     const [incidents, total] = await Promise.all([
       prisma.outageIncident.findMany({

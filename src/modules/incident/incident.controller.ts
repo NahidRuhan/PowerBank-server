@@ -21,7 +21,7 @@ export class IncidentController {
 
   static async getAll(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await IncidentService.getAll(req.query);
+      const result = await IncidentService.getAll(req.query, req.user!);
       return sendSuccess(res, result);
     } catch (error) {
       next(error);
