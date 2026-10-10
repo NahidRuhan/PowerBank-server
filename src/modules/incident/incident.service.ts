@@ -99,7 +99,10 @@ export class IncidentService {
     if (query.status) where.status = query.status;
 
     if (user.role === 'CUSTOMER') {
-      where.createdBy = user.id;
+      where.OR = [
+        { createdBy: user.id },
+        { reports: { some: { userId: user.id } } }
+      ];
     }
 
     const [incidents, total] = await Promise.all([
